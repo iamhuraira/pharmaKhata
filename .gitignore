@@ -1,0 +1,71 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# Database
+*.db
+
+# testing
+/coverage
+
+# storybook
+storybook-static
+*storybook.log
+
+# playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/
+
+# next.js
+/.next
+/out
+
+# cache
+.swc/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+Thumbs.db
+
+# debug
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# env files
+.env
+*.env.*
+!*.env.example
+.env.development.docker
+.env.test.docker
+.env.production.docker
+
+# local folder
+local
+
+# vercel
+.vercel
+.idea
+
+
+# Visual Studio Code directory
+.vscode/
+
+# Visual Studio Code workspace file
+*.code-workspac
+
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history/
