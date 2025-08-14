@@ -9,7 +9,7 @@ import type {
 import api from '@/utils/api';
 
 export const signin: TSigninService = async (payload) => {
-  const { data } = await api.post('/auth/login', {
+  const { data } = await api.post('api/auth/login', {
     ...payload,
   });
 
@@ -17,7 +17,7 @@ export const signin: TSigninService = async (payload) => {
 };
 
 export const signUp: TSignupService = async (payload) => {
-  const { data } = await api.post('/auth/register', {
+  const { data } = await api.post('api/auth/register', {
     ...payload,
   });
 
@@ -26,7 +26,7 @@ export const signUp: TSignupService = async (payload) => {
 
 export const forgotPassword: TForgotPasswordService = async (payload) => {
   const { data } = await api.put(
-    '/auth/request-forgot-password-otp',
+    '/api/auth/request-forgot-password-otp',
     {},
     {
       params: payload,
@@ -37,7 +37,7 @@ export const forgotPassword: TForgotPasswordService = async (payload) => {
 };
 
 export const verifyOtp: TVerifyForgotPasswordOtpService = async (payload) => {
-  const { data } = await api.get('/auth/verify-forgot-password-otp', {
+  const { data } = await api.get('/api/auth/verify-forgot-password-otp', {
     params: payload,
   });
 
@@ -45,7 +45,7 @@ export const verifyOtp: TVerifyForgotPasswordOtpService = async (payload) => {
 };
 
 export const resendTFAOtp: TResendTfaOtpService = async (payload) => {
-  const { data } = await api.get('/auth/resend-tfa-otp', {
+  const { data } = await api.get('/api/auth/resend-tfa-otp', {
     params: payload,
   });
 
@@ -54,7 +54,7 @@ export const resendTFAOtp: TResendTfaOtpService = async (payload) => {
 
 export const verifyTfaOtp: TVerifyTfaOtpService = async (payload) => {
   const { data } = await api.post(
-    '/auth/verify-tfa-otp',
+    '/api/auth/verify-tfa-otp',
     {},
     {
       params: payload,

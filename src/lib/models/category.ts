@@ -1,8 +1,8 @@
 // src/models/category.model.ts
 
-import { Document, model, Schema, Types } from 'mongoose';
+import mongoose, { Document, Schema, Types } from 'mongoose';
 
-import { MODELS } from '@/common/constants/common';
+import { MODELS } from '../constants/common';
 
 export interface ICategory extends Document {
   _id: Types.ObjectId;
@@ -34,4 +34,11 @@ const categorySchema = new Schema<ICategory>(
   }
 );
 
-export const Category = model<ICategory>(MODELS.CATEGORY, categorySchema);
+// Prevent duplicate model compilation
+let Category: mongoose.Model<ICategory>;
+try {
+  Category = mongoose.model<ICategory>(MODELS.CATEGORY);
+} catch {
+  Category = mongoose.model<ICategory>(MODELS.CATEGORY, categorySchema);
+}
+export { Category };

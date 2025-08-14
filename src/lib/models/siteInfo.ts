@@ -73,4 +73,11 @@ const siteInfoSchema = new Schema<ISiteInfo>({
   },
 });
 
-export const SiteInfo = mongoose.model<ISiteInfo>(MODELS.SITE_INFO, siteInfoSchema);
+// Prevent duplicate model compilation
+let SiteInfo: mongoose.Model<ISiteInfo>;
+try {
+  SiteInfo = mongoose.model<ISiteInfo>(MODELS.SITE_INFO);
+} catch {
+  SiteInfo = mongoose.model<ISiteInfo>(MODELS.SITE_INFO, siteInfoSchema);
+}
+export { SiteInfo };

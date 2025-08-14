@@ -6,7 +6,12 @@ export type IProduct = {
   shortDescription?: string;
   urduDescription?: string;
   quantity: number;
-  categoryId: string;
+  categoryId: {
+    _id: string;
+    name: string;
+    urduName?: string;
+    description?: string;
+  };
   size?: number;
   packType: string;
   price: number;

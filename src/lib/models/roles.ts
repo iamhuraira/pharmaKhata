@@ -22,4 +22,11 @@ const roleSchema = new Schema<IRole>({
   ],
 });
 
-export const Role = mongoose.model<IRole>(MODELS.ROLES, roleSchema);
+// Prevent duplicate model compilation
+let Role: mongoose.Model<IRole>;
+try {
+  Role = mongoose.model<IRole>(MODELS.ROLES);
+} catch {
+  Role = mongoose.model<IRole>(MODELS.ROLES, roleSchema);
+}
+export { Role };

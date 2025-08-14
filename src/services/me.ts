@@ -11,7 +11,7 @@ import type {
 import api from '@/utils/api';
 
 export const updatePassword: TUpdatePasswordService = async (payload) => {
-  const { data } = await api.put('/users/me/update-password', {
+  const { data } = await api.put('/api/users/me/update-password', {
     ...payload,
   });
 
@@ -19,20 +19,20 @@ export const updatePassword: TUpdatePasswordService = async (payload) => {
 };
 
 export const getMe: TGetMeService = async () => {
-  const { data } = await api.get('/users/me');
+  const { data } = await api.get('/api/users/me');
 
   return data;
 };
 
 export const requestEmailVerification: TRequestEmailVerification = async () => {
-  const { data } = await api.put('/users/request-email-verification-otp');
+  const { data } = await api.put('/api/users/request-email-verification-otp');
 
   return data;
 };
 
 export const verifyEmail: TVerifyEmail = async (payload) => {
   const { data } = await api.put(
-    '/users/verify-email',
+    '/api/users/verify-email',
     {},
     {
       params: {
@@ -45,19 +45,19 @@ export const verifyEmail: TVerifyEmail = async (payload) => {
 };
 
 export const enableTFA: TEnableTFAService = async () => {
-  const { data } = await api.put('/users/me/enable-tfa');
+  const { data } = await api.put('/api/users/me/enable-tfa');
 
   return data;
 };
 
 export const disableTFA: TDisableTFAService = async () => {
-  const { data } = await api.put('/users/me/disable-tfa');
+  const { data } = await api.put('/api/users/me/disable-tfa');
 
   return data;
 };
 
 export const updateMe: TUpdateMeService = async (payload) => {
-  const { data } = await api.put('/users/me', { ...payload });
+  const { data } = await api.put('/api/users/me', { ...payload });
 
   return data;
 };
@@ -65,7 +65,7 @@ export const updateMe: TUpdateMeService = async (payload) => {
 export const changePasswordUsingCurrentPassword: TChnagePasswordUsingCureentPasswordService
   = async (payload) => {
     const { data } = await api.put(
-      '/users/change-password-using-current-password',
+      '/api/users/change-password-using-current-password',
       {
         ...payload,
       },

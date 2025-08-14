@@ -1,6 +1,6 @@
-import { AdminPermissions, CommonPermissions, CustomerPermissions, UserRoles } from '@/common/constants/enums';
-import { Permission } from '@/common/models/permissions';
-import { Role } from '@/common/models/roles';
+import { AdminPermissions, CommonPermissions, CustomerPermissions, UserRoles } from '@/lib/constants/enums';
+import { Permission } from '@/lib/models/permissions';
+import { Role } from '@/lib/models/roles';
 
 const seedRoles = async () => {
   try {

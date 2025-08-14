@@ -2,7 +2,7 @@
 
 import { Types } from 'mongoose';
 
-import { Category } from '@/common/models/category';
+import { Category } from '@/lib/models/category';
 
 export default async function seedCategories() {
   // Optional: Clear existing categories if you want a clean slate

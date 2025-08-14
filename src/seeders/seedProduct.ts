@@ -1,4 +1,4 @@
-import { Product } from '@/common/models/product';
+import { Product } from '@/lib/models/product';
 import { products } from '@/seeders/productData';
 
 export default async function seedProducts() {
