@@ -1,6 +1,7 @@
 import { Types } from 'mongoose';
+import {UserRoles, UserStatus} from "@/types/enums";
 
-import { UserRoles, UserStatus } from '@/common/constants/enums';
+
 export interface IAddress {
   street: string;
   city: string;

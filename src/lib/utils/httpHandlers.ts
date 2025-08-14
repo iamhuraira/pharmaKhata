@@ -1,8 +1,8 @@
 import { NextFunction, Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { ZodError, ZodSchema } from 'zod';
-
-import { ResponseStatus, ServiceResponse } from '@/common/models/serviceResponse';
+import {ServiceResponse} from "@/lib/models";
+import {ResponseStatus} from "@/lib/models/serviceResponse";
 
 export const handleServiceResponse = (serviceResponse: ServiceResponse<any>, response: Response) => {
   return response.status(serviceResponse.statusCode).send(serviceResponse);
@@ -23,7 +23,7 @@ export const validateRequest = (schema: ZodSchema) => (req: Request, res: Respon
 };
 
 export const normalizeQueryArray = (paramName: string) => {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, _res: Response, next: NextFunction) => {
     const paramValue = req.query[paramName];
 
     if (typeof paramValue === 'string') {

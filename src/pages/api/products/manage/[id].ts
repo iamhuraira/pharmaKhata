@@ -41,7 +41,7 @@ export default async function handler(
 }
 
 // Get single product
-async function getProduct(req: NextApiRequest, res: NextApiResponse, id: string) {
+async function getProduct(_req: NextApiRequest, res: NextApiResponse, id: string) {
   const product = await Product.findById(id)
     .populate('categoryId', 'name urduName description')
     .lean();
@@ -118,7 +118,7 @@ async function updateProduct(req: NextApiRequest, res: NextApiResponse, id: stri
 }
 
 // Delete product
-async function deleteProduct(req: NextApiRequest, res: NextApiResponse, id: string) {
+async function deleteProduct(_req: NextApiRequest, res: NextApiResponse, id: string) {
   const deletedProduct = await Product.findByIdAndDelete(id);
 
   if (!deletedProduct) {

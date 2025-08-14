@@ -1,9 +1,6 @@
-import { UpdateQuery } from 'mongoose';
 import bcrypt from 'bcrypt';
-
 import { Role } from '@/lib/models/roles';
 import { User } from '@/lib/models/user';
-import { IUserDoc } from '@/lib/types/users';
 
 import { users } from './data';
 

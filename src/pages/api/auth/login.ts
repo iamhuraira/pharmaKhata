@@ -1,7 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { connectDB } from '@/lib/db';
 import { User } from '@/lib/models/user';
-import { Role } from '@/lib/models/roles';
 import bcrypt from 'bcrypt';
 import jwt, { SignOptions } from 'jsonwebtoken';
 import { env } from '@/config/envConfig';

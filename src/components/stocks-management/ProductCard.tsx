@@ -3,8 +3,7 @@ import { IProduct } from '@/types/products';
 import clsx from 'clsx';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
-import { Button, Modal, InputNumber, Tooltip } from 'antd';
-import { EditOutlined } from '@ant-design/icons';
+import {  Modal, InputNumber } from 'antd';
 import { useState } from 'react';
 import { useUpdateProductQuantity } from '@/hooks/products';
 

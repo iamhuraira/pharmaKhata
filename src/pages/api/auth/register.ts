@@ -1,5 +1,4 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import mongoose from 'mongoose';
 import { connectDB } from '@/lib/db';
 import { User } from '@/lib/models/user';
 import { Role } from '@/lib/models/roles';
