@@ -1,7 +1,4 @@
 import axios from 'axios';
-
-import { Env } from '@/libs/Env';
-
 import { getToken, removeToken } from './token';
 
 const api = axios.create({

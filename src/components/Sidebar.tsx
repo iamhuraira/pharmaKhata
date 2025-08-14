@@ -14,7 +14,6 @@ import {
   CloseIcon,
   CompanyLogo,
   DashboardIcon,
-  SettingsIcon,
 } from "./svg-components";
 import Typography from "./Typography";
 
