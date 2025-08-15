@@ -1,15 +1,5 @@
-import { fileURLToPath } from 'node:url';
-
 import withBundleAnalyzer from '@next/bundle-analyzer';
 import { withSentryConfig } from '@sentry/nextjs';
-import createJiti from 'jiti';
-import withNextIntl from 'next-intl/plugin';
-
-const jiti = createJiti(fileURLToPath(import.meta.url));
-
-jiti('./src/libs/Env');
-
-const withNextIntlConfig = withNextIntl('./src/libs/i18n.ts');
 
 const bundleAnalyzer = withBundleAnalyzer({
   enabled: process.env.ANALYZE === 'true',
@@ -17,25 +7,23 @@ const bundleAnalyzer = withBundleAnalyzer({
 
 /** @type {import('next').NextConfig} */
 export default withSentryConfig(
-  bundleAnalyzer(
-    withNextIntlConfig({
-      eslint: {
-        dirs: ['.'],
-      },
-      poweredByHeader: false,
-      reactStrictMode: false,
-      experimental: {
-        // serverComponentsExternalPackages: ['@electric-sql/pglite'],
-      },
-      webpack(config) {
-        config.module.rules.push({
-          test: /\.svg$/,
-          use: [{ loader: '@svgr/webpack', options: { icons: true } }],
-        });
-        return config;
-      },
-    }),
-  ),
+  bundleAnalyzer({
+    eslint: {
+      dirs: ['.'],
+    },
+    poweredByHeader: false,
+    reactStrictMode: false,
+    experimental: {
+      // serverComponentsExternalPackages: ['@electric-sql/pglite'],
+    },
+    webpack(config) {
+      config.module.rules.push({
+        test: /\.svg$/,
+        use: [{ loader: '@svgr/webpack', options: { icons: true } }],
+      });
+      return config;
+    },
+  }),
   {
     // For all available options, see:
     // https://github.com/getsentry/sentry-webpack-plugin#options

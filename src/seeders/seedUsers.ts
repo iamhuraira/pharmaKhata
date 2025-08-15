@@ -26,7 +26,7 @@ const seedUsers = async () => {
     for (const user of users) {
       const hashedPassword = await bcrypt.hash(user.password, 10);
       console.log(`Hashing password for ${user.firstName} ${user.lastName} (${user.phone}): ${hashedPassword.substring(0, 20)}...`);
-      
+
       await User.findOneAndUpdate(
         { phone: user.phone },
         {

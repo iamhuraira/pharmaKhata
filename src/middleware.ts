@@ -51,19 +51,10 @@
 //   matcher: ['/((?!.+\\.[\\w]+$|_next|monitoring).*)', '/', '/(api|trpc)(.*)'], // Also exclude tunnelRoute used in Sentry from the matcher
 // };
 
-import { type NextRequest, NextResponse } from "next/server";
-import createMiddleware from "next-intl/middleware";
-
-import { AppConfig } from "./utils/AppConfig";
-
-const intlMiddleware = createMiddleware({
-  locales: AppConfig.locales,
-  localePrefix: AppConfig.localePrefix,
-  defaultLocale: AppConfig.defaultLocale,
-});
+import { type NextRequest, NextResponse } from 'next/server';
 
 const isProtectedRoute = (pathname: string) => {
-  const protectedRoutes = [/^\/dashboard(.*)/, /^\/[a-z]{2}\/dashboard(.*)/];
+  const protectedRoutes = [/^\/dashboard(.*)/];
   return protectedRoutes.some((route) => route.test(pathname));
 };
 
@@ -77,43 +68,41 @@ export default function middleware(request: NextRequest) {
   const VFEamil = request.cookies.get("VFEmail");
   const allowChangePassword = request.cookies.get("allowChangePassword");
   const passwordUpdated = request.cookies.get("passwordUpdated");
-  const locale = pathname.match(/(\/.*)\/dashboard/)?.[1] ?? "";
-
-  if (isProtectedRoute(pathname) && (!token || emailVerified !== "true")) {
-    const signInUrl = new URL(`${locale}/sign-in`, request.url);
+  if (isProtectedRoute(pathname) && (!token || emailVerified !== 'true')) {
+    const signInUrl = new URL('/sign-in', request.url);
 
     return NextResponse.redirect(signInUrl.toString());
   }
   if (
-    (request.nextUrl.pathname === "/sign-in" ||
-      request.nextUrl.pathname === "/") &&
+    (request.nextUrl.pathname === '/sign-in' ||
+      request.nextUrl.pathname === '/') &&
     token &&
-    emailVerified === "true"
+    emailVerified === 'true'
   ) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return NextResponse.redirect(new URL('/dashboard', request.url));
   }
-  if (request.nextUrl.pathname === "/otp-verification" && !FPEamil) {
-    const signInUrl = new URL(`${locale}/sign-in`, request.url);
+  if (request.nextUrl.pathname === '/otp-verification' && !FPEamil) {
+    const signInUrl = new URL('/sign-in', request.url);
 
     return NextResponse.redirect(signInUrl.toString());
   }
-  if (request.nextUrl.pathname === "/change-password" && !allowChangePassword) {
-    const signInUrl = new URL(`${locale}/sign-in`, request.url);
+  if (request.nextUrl.pathname === '/change-password' && !allowChangePassword) {
+    const signInUrl = new URL('/sign-in', request.url);
 
     return NextResponse.redirect(signInUrl.toString());
   }
-  if (request.nextUrl.pathname === "/password-updated" && !passwordUpdated) {
-    const signInUrl = new URL(`${locale}/sign-in`, request.url);
+  if (request.nextUrl.pathname === '/password-updated' && !passwordUpdated) {
+    const signInUrl = new URL('/sign-in', request.url);
 
     return NextResponse.redirect(signInUrl.toString());
   }
-  if (request.nextUrl.pathname === "/verify-email" && !VFEamil) {
-    const signInUrl = new URL(`${locale}/sign-in`, request.url);
+  if (request.nextUrl.pathname === '/verify-email' && !VFEamil) {
+    const signInUrl = new URL('/sign-in', request.url);
 
     return NextResponse.redirect(signInUrl.toString());
   }
 
-  return intlMiddleware(request);
+  return NextResponse.next();
 }
 
 export const config = {

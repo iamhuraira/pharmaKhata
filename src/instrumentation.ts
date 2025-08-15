@@ -5,7 +5,7 @@ export async function register() {
     // Node.js Sentry configuration
     Sentry.init({
       // Sentry DSN
-      dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+      dsn: process.env.NEXT_PUBLIC_SENTRY_DSN || '',
 
       // Enable Spotlight in development
       spotlight: process.env.NODE_ENV === 'development',
@@ -22,7 +22,7 @@ export async function register() {
     // Edge Sentry configuration
     Sentry.init({
       // Sentry DSN
-      dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+      dsn: process.env.NEXT_PUBLIC_SENTRY_DSN || '',
 
       // Enable Spotlight in development
       spotlight: process.env.NODE_ENV === 'development',

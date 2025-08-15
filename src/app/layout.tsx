@@ -5,7 +5,7 @@ import type { Metadata } from 'next';
 
 import ProviderRedux from '@/redux/ProviderRedux';
 import TanstackProvider from '@/TanStack/TanStackProvider';
-import { AppConfig } from '@/utils/AppConfig';
+
 import { ConfigProvider } from 'antd';
 
 export const metadata: Metadata = {
@@ -33,16 +33,11 @@ export const metadata: Metadata = {
   ],
 };
 
-export function generateStaticParams() {
-  return AppConfig.locales.map((locale) => ({ locale }));
-}
-
-export default function LocaleLayout(props: {
+export default function RootLayout(props: {
   children: React.ReactNode;
-  params: { locale: string };
 }) {
   return (
-    <html lang={props.params.locale}>
+    <html lang="en">
       <body className='mx-auto max-w-[1920px]'>
         <ProviderRedux>
           <TanstackProvider>
