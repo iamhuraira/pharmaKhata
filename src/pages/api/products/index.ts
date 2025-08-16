@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { connectDB } from '@/lib/db';
-import { Product } from '@/lib/models/product';
+import { Product, Category } from '@/lib/models';
 
 export default async function handler(
   req: NextApiRequest,

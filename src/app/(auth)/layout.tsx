@@ -9,11 +9,6 @@ export default function CenteredLayout({
 }) {
   return (
     <div className="flex min-h-screen w-full flex-col items-center bg-white md:bg-[#FEFEFE]">
-      {/* <Image
-        src={logo}
-        alt="logo"
-        className="my-10 h-[50px] w-[180px] object-cover md:m-0 md:h-[100px] md:w-[280px] "
-      /> */}
       <div className="my-5">
         <CompanyLogo className="h-[100px] w-[280px] object-cover md:m-0 md:h-[100px] md:w-[280px] " />
       </div>
