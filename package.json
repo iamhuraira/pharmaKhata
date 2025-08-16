@@ -30,12 +30,12 @@
     "@playwright/test": "^1.50.1",
     "@reduxjs/toolkit": "^2.5.1",
     "@sentry/nextjs": "^9.1.0",
-    "@spotlightjs/spotlight": "^2.10.3",
+
     "@svgr/webpack": "^8.1.0",
     "@t3-oss/env-nextjs": "^0.11.0",
     "@tanstack/react-query": "^5.54.1",
     "@tanstack/react-query-devtools": "^5.54.1",
-    "@vitejs/plugin-react": "^4.3.4",
+
     "antd": "^5.22.4",
     "axios": "^1.7.7",
     "bcrypt": "^5.1.1",
@@ -140,6 +140,8 @@
     "typescript": "^5.5.4",
     "vite-tsconfig-paths": "^5.0.1",
     "vitest": "^2.0.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "@spotlightjs/spotlight": "^2.10.3",
     "vitest-fail-on-console": "^0.7.0"
   },
   "config": {
@@ -149,7 +151,7 @@
   },
   "release": {
     "branches": [
-      "`main"
+      "main"
     ],
     "plugins": [
       [
@@ -169,6 +171,10 @@
       "@semantic-release/git",
       "@semantic-release/github"
     ]
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "npm": ">=8.0.0"
   },
   "husky": {
     "hooks": {
