@@ -1,12 +1,12 @@
 {
   "name": "pharmaKhata",
-  "version": "3.55.3",
+  "version": "3.55.4",
   "author": "Abu Huraira (https://github.com/iamhuraira429/)",
   "scripts": {
     "dev:spotlight": "spotlight-sidecar",
     "dev:next": "next dev",
     "dev": "run-p dev:*",
-    "build": "next build",
+    "build": "VERCEL_BUILD_CACHE=0 next build",
     "start": "next start",
     "build-stats": "cross-env ANALYZE=true npm run build",
     "clean": "rimraf .next out coverage",
