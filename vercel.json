@@ -1,0 +1,10 @@
+{
+  "buildCommand": "npm run build",
+  "installCommand": "npm ci",
+  "framework": "nextjs",
+  "build": {
+    "env": {
+      "VERCEL_BUILD_CACHE": "0"
+    }
+  }
+}

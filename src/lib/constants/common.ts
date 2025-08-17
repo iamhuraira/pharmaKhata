@@ -9,13 +9,18 @@ export const apiRoutes = {
   siteInfo: '/site-info',
   products: '/products',
   customer: '/customer',
+  orders: '/orders',
+  expenses: '/expenses',
+  reports: '/reports',
 };
 
 export const MODELS = {
   USERS: 'users',
   ROLES: 'roles',
   PERMISSIONS: 'permissions',
-  CATEGORY: 'Category',
   SITE_INFO: 'SiteInfo',
-  PRODUCT: 'Product',
+  PRODUCTS: 'products',
+  CATEGORY: 'categories',
+  ORDERS: 'orders',
+  EXPENSES: 'expenses',
 };

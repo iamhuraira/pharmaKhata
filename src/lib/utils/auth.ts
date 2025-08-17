@@ -1,10 +1,10 @@
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
-import { IUser } from '@/common/types/users';
+import { IUser } from '../types/users';
 
 import { User } from '../models/user';
-import { env } from './envConfig';
+import { env } from '../../config/envConfig';
 
 const { JWT_SECRET_KEY, JWT_EXPIRES_IN, BCRYPT_SALT_ROUNDS } = env;
 
@@ -15,7 +15,7 @@ export const generateToken = (user: any) => {
     username: user.username,
   };
 
-  const token = jwt.sign(payload, JWT_SECRET_KEY, { expiresIn: JWT_EXPIRES_IN });
+  const token = jwt.sign(payload, JWT_SECRET_KEY as string, { expiresIn: JWT_EXPIRES_IN as string } as jwt.SignOptions);
 
   return token;
 };

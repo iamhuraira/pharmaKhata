@@ -1,9 +1,6 @@
-import { UpdateQuery } from 'mongoose';
-
-import { Role } from '@/common/models/roles';
-import { User } from '@/common/models/user';
-import { IUserDoc } from '@/common/types/users';
-import { hashPassword } from '@/common/utils/auth';
+import bcrypt from 'bcrypt';
+import { Role } from '@/lib/models/roles';
+import { User } from '@/lib/models/user';
 
 import { users } from './data';
 
@@ -26,19 +23,20 @@ const seedUsers = async () => {
 
     console.log('Seeding users...');
 
-    await Promise.all(
-      users.map(async (user: UpdateQuery<IUserDoc>) =>
-        User.findOneAndUpdate(
-          { phone: user.phone },
-          {
-            ...user,
-            password: await hashPassword(user.password),
-            role: roleMap[user.role],
-          },
-          { upsert: true, new: true, setDefaultsOnInsert: true }
-        )
-      )
-    );
+    for (const user of users) {
+      const hashedPassword = await bcrypt.hash(user.password, 10);
+      console.log(`Hashing password for ${user.firstName} ${user.lastName} (${user.phone}): ${hashedPassword.substring(0, 20)}...`);
+
+      await User.findOneAndUpdate(
+        { phone: user.phone },
+        {
+          ...user,
+          password: hashedPassword,
+          role: roleMap[user.role],
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
+    }
 
     console.log('Users seeded!');
   } catch (err) {

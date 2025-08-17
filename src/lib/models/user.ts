@@ -112,5 +112,11 @@ const userSchema = new Schema(
   }
 );
 
-const User = mongoose.model<IUserDoc>(MODELS.USERS, userSchema);
+// Prevent duplicate model compilation
+let User: mongoose.Model<IUserDoc>;
+try {
+  User = mongoose.model<IUserDoc>(MODELS.USERS);
+} catch {
+  User = mongoose.model<IUserDoc>(MODELS.USERS, userSchema);
+}
 export { User };

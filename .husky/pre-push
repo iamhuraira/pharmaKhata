@@ -14,4 +14,4 @@ fi
 npm run test
 
 # If not pushing to main or dev, run the build script
-npm run build
+# npm run build

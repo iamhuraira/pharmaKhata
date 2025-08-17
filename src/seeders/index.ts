@@ -1,9 +1,9 @@
 import mongoose from 'mongoose';
 
-import { env } from '@/common/utils/envConfig';
+import { env } from '@/config/envConfig';
 
-// import seedProducts from '@/seeders/seedProduct';
-// import seedCategories from '@/seeders/seedCategory';
+import seedProducts from '@/seeders/seedProduct';
+import seedCategories from '@/seeders/seedCategory';
 import seedPermissions from './seedPermissions';
 import seedRoles from './seedRoles';
 import seedUsers from './seedUsers';
@@ -18,8 +18,8 @@ const seedDatabase = async () => {
       await seedPermissions();
       await seedRoles();
       await seedUsers();
-      // await seedCategories();
-      // await seedProducts();
+      await seedCategories();
+      await seedProducts();
     })
     .catch((err) => {
       console.log('Something went wrong while seeding'), JSON.stringify(err);

@@ -1,9 +1,9 @@
 import { UpdateQuery } from 'mongoose';
 import mongoose from 'mongoose';
 
-import { UserRoles } from '@/common/constants/enums';
-import { IUserDoc } from '@/common/types/users';
-import { env } from '@/common/utils/envConfig';
+import { UserRoles } from '@/lib/constants/enums';
+import { IUserDoc } from '@/lib/types/users';
+import { env } from '@/config/envConfig';
 const { ObjectId } = mongoose.Types;
 
 export const devUsers: UpdateQuery<IUserDoc>[] = [

@@ -3,8 +3,7 @@ import { IProduct } from '@/types/products';
 import clsx from 'clsx';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
-import { Button, Modal, InputNumber, Tooltip } from 'antd';
-import { EditOutlined } from '@ant-design/icons';
+import {  Modal, InputNumber } from 'antd';
 import { useState } from 'react';
 import { useUpdateProductQuantity } from '@/hooks/products';
 
@@ -18,7 +17,7 @@ const ProductCard = ({ product, className, isLoading }: ProductCardProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newQuantity, setNewQuantity] = useState<number>(product?.quantity || 0);
 
-  const { updateProductQuantity: updateQuantity } = useUpdateProductQuantity();
+  const { updateProductQuantity: updateQuantity, isLoading: isUpdating } = useUpdateProductQuantity();
 
   const handleUpdate = async () => {
     await updateQuantity({
@@ -30,11 +29,23 @@ const ProductCard = ({ product, className, isLoading }: ProductCardProps) => {
 
   if (isLoading || !product) {
     return (
-      <div className={clsx('rounded-lg border border-gray-200 bg-white p-1', className)}>
-        <Skeleton count={2} />
-        <div className='mt-4'>
-          <Skeleton width={100} />
-          <Skeleton width={80} className='ml-2' />
+      <div className={clsx('rounded-xl bg-white p-3 min-h-[160px] shadow-lg border-0', className)}>
+        {/* Header Skeleton */}
+        <div className='pr-16'>
+          <Skeleton height={20} className='mb-1' />
+          <div className='mb-1'>
+            <Skeleton height={20} className='w-20' />
+          </div>
+          <Skeleton count={1} className='mb-2' />
+        </div>
+        
+        {/* Footer Skeleton */}
+        <div className='mt-auto pt-2 border-t border-gray-200/50 bg-gradient-to-t from-gray-50/50 to-transparent'>
+          <div className='flex items-center justify-between mb-2'>
+            <Skeleton height={20} className='w-16' />
+            <Skeleton height={20} className='w-12' />
+          </div>
+          <Skeleton height={32} className='w-full' />
         </div>
       </div>
     );
@@ -48,59 +59,89 @@ const ProductCard = ({ product, className, isLoading }: ProductCardProps) => {
         open={isModalOpen}
         onOk={handleUpdate}
         onCancel={() => setIsModalOpen(false)}
-        okText='Add'
+        okText='Update'
         cancelText='Cancel'
+        confirmLoading={isUpdating}
+        okButtonProps={{ disabled: isUpdating }}
+        width='90%'
+        centered
+        className='mobile-modal'
       >
-        <div className='mt-4'>
-          <InputNumber
-            min={0}
-            value={newQuantity}
-            onChange={(value) => setNewQuantity(value || 0)}
-            className='w-full'
-          />
+        <div className='space-y-4 py-2'>
+          <div>
+            <label className='block text-sm font-medium text-gray-700 mb-2'>
+              Product: <span className='font-semibold'>{product.name}</span>
+            </label>
+            <label className='block text-sm font-medium text-gray-700 mb-2'>
+              Current Stock: <span className='font-semibold'>{product.quantity}</span>
+            </label>
+          </div>
+          
+          <div>
+            <label className='block text-sm font-medium text-gray-700 mb-2'>
+              New Quantity
+            </label>
+            <InputNumber
+              min={0}
+              value={newQuantity}
+              onChange={(value) => setNewQuantity(value || 0)}
+              className='w-full'
+              size='large'
+              placeholder='Enter new quantity'
+            />
+          </div>
         </div>
       </Modal>
       <article
         className={clsx(
-          'rounded-lg bg-white p-3 shadow-md transition-shadow hover:shadow-lg',
-          'border border-gray-200 hover:ring-2 hover:ring-secondary',
-          'relative flex flex-col justify-between',
+          'rounded-xl bg-white p-3 shadow-lg border-0',
+          'relative flex flex-col justify-between min-h-[160px]',
+          'transition-all duration-300 hover:shadow-xl hover:-translate-y-1',
+          'backdrop-blur-sm bg-white/95',
           className,
         )}
         aria-labelledby={`product-${product._id}-title`}
       >
-        <Tooltip title='Edit Quantity' placement='top'>
-          <Button
-            type='primary'
-            shape='circle'
-            icon={<EditOutlined className='text-white' />}
+        {/* Rectangular Edit Button */}
+        <div className='absolute right-2 top-2 z-50'>
+          <button
             onClick={() => setIsModalOpen(true)}
-            className='bg-primary-600 hover:bg-primary-700 absolute right-2 top-2 z-10 flex !h-9 !w-9 items-center justify-center border-2 border-white shadow-lg transition-all duration-300 hover:scale-110 hover:transform hover:shadow-lg'
-            style={{
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-            }}
-          />
-        </Tooltip>
-        {/* Header Section */}
-        <header>
+            className='flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 text-white shadow-md transition-all duration-200 hover:bg-blue-700 active:bg-blue-800 active:scale-95 border border-blue-500/20'
+            aria-label='Update product quantity'
+            style={{ backgroundColor: '#2563eb', color: 'white' }}
+          >
+            <span className='text-white text-lg' style={{ color: 'white' }}>
+              📦
+            </span>
+          </button>
+        </div>
+        {/* Header Section - Mobile Optimized */}
+        <header className='pr-16'>
           <h3
             id={`product-${product._id}-title`}
-            className='mb-1 truncate text-base font-semibold text-gray-800'
+            className='mb-1 text-base font-semibold text-gray-900 leading-tight'
             title={product.name}
           >
             {product.name}
           </h3>
 
+          {/* Category Badge - Single line for mobile */}
+          <div className='mb-1'>
+            <span className='inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md'>
+              {product.categoryId.name}
+            </span>
+          </div>
+
           {product.shortDescription && (
-            <p className='mb-1 line-clamp-2 text-xs text-gray-600'>{product.shortDescription}</p>
+            <p className='mb-2 text-xs text-gray-600 leading-relaxed line-clamp-2'>{product.shortDescription}</p>
           )}
         </header>
 
-        {/* Urdu Description */}
+        {/* Urdu Description - Mobile Optimized */}
         {product.urduDescription && (
-          <div className='mb-1'>
+          <div className='mb-2'>
             <p
-              className='text-right font-urdu text-sm leading-relaxed text-gray-700'
+              className='text-right font-urdu text-xs leading-relaxed text-gray-700'
               dir='rtl'
               lang='ur'
             >
@@ -109,9 +150,10 @@ const ProductCard = ({ product, className, isLoading }: ProductCardProps) => {
           </div>
         )}
 
-        {/* Footer Section */}
-        <footer className='mt-1'>
-          <div className='flex items-center justify-between'>
+        {/* Footer Section - Mobile Optimized */}
+        <footer className='mt-auto pt-2 border-t border-gray-200/50 bg-gradient-to-t from-gray-50/50 to-transparent'>
+          {/* Price and Size Row */}
+          <div className='flex items-center justify-between mb-2'>
             <div className='flex items-center gap-2'>
               <span
                 className='text-primary-600 text-base font-bold'
@@ -125,31 +167,33 @@ const ProductCard = ({ product, className, isLoading }: ProductCardProps) => {
               </span>
               {product.size && (
                 <span
-                  className='text-sm text-gray-500'
+                  className='text-xs text-gray-600 bg-gradient-to-r from-gray-100 to-gray-200 px-2 py-1 rounded-lg shadow-sm border border-gray-200'
                   aria-label={`Package size: ${product.size} ${product.packType}`}
                 >
-                  ({product.size}
-                  {product.packType.toLowerCase() === 'tabs' ? ' Tablets' : 'ml'})
+                  {product.size}
+                  {product.packType.toLowerCase() === 'tabs' ? ' Tabs' : 'ml'}
                 </span>
               )}
             </div>
+          </div>
 
+          {/* Stock Status - Full Width for Mobile */}
+          <div className='w-full'>
             <span
               className={clsx(
-                'rounded px-2 py-1 text-sm transition-colors',
-                'whitespace-nowrap font-medium',
+                'block w-full text-center rounded-lg px-2 py-1.5 text-xs font-medium transition-all duration-300 shadow-md',
                 product.quantity > 0
-                  ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                  : 'bg-red-100 text-red-800 hover:bg-red-200',
+                  ? 'bg-gradient-to-r from-green-400 to-green-500 text-white border-0 shadow-green-500/30'
+                  : 'bg-gradient-to-r from-red-400 to-red-500 text-white border-0 shadow-red-500/30',
               )}
               aria-live='polite'
             >
               {product.quantity > 0 ? (
                 <>
-                  In Stock <span className=''>({product.quantity})</span>
+                  📦 In Stock <span className='font-bold'>({product.quantity})</span>
                 </>
               ) : (
-                'Out of Stock'
+                '❌ Out of Stock'
               )}
             </span>
           </div>

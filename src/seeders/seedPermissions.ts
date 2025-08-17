@@ -3,8 +3,8 @@ import {
   CommonPermissions,
   CustomerPermissions,
   SuperAdminPermissions,
-} from '@/common/constants/enums';
-import { Permission } from '@/common/models/permissions';
+} from '@/lib/constants/enums';
+import { Permission } from '@/lib/models/permissions';
 
 const seedPermissions = async () => {
   try {

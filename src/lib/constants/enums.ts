@@ -27,9 +27,22 @@ export enum CommonPermissions {
   READ_ALL_CUSTOMERS = 'read_all_customers',
 }
 
-export enum CustomerPermissions {}
+export enum CustomerPermissions {
+  // Customer specific permissions
+  VIEW_ORDERS = 'view_orders',
+  PLACE_ORDERS = 'place_orders',
+  VIEW_PRODUCTS = 'view_products',
+  UPDATE_PROFILE = 'update_profile',
+}
 
-export enum SuperAdminPermissions {}
+export enum SuperAdminPermissions {
+  // Super admin specific permissions
+  MANAGE_ADMINS = 'manage_admins',
+  MANAGE_ROLES = 'manage_roles',
+  MANAGE_PERMISSIONS = 'manage_permissions',
+  SYSTEM_SETTINGS = 'system_settings',
+  VIEW_SYSTEM_LOGS = 'view_system_logs',
+}
 
 export enum AdminPermissions {
   // user

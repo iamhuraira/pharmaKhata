@@ -1,8 +1,8 @@
 // src/models/product.model.ts
 
-import { Document, model, Schema, Types } from 'mongoose';
+import mongoose, { Document, Schema, Types } from 'mongoose';
 
-import { MODELS } from '@/common/constants/common';
+import { MODELS } from '../constants/common';
 
 export interface IProduct extends Document {
   _id: Types.ObjectId;
@@ -32,15 +32,16 @@ const productSchema = new Schema<IProduct>(
     urduDescription: {
       type: String,
     },
-    categoryId: {
-      type: Schema.Types.ObjectId,
-      ref: MODELS.CATEGORY,
-      required: true,
-    },
+
     quantity: {
       type: Number,
       required: true,
       default: 0,
+    },
+    categoryId: {
+      type: Schema.Types.ObjectId,
+      ref: MODELS.CATEGORY,
+      required: true,
     },
     size: {
       type: Number,
@@ -60,4 +61,11 @@ const productSchema = new Schema<IProduct>(
   }
 );
 
-export const Product = model<IProduct>(MODELS.PRODUCT, productSchema);
+// Prevent duplicate model compilation
+let Product: mongoose.Model<IProduct>;
+try {
+  Product = mongoose.model<IProduct>(MODELS.PRODUCTS);
+} catch {
+  Product = mongoose.model<IProduct>(MODELS.PRODUCTS, productSchema);
+}
+export { Product };

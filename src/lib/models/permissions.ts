@@ -17,4 +17,11 @@ const permissionSchema = new Schema<IPermission>({
   description: { type: String },
 });
 
-export const Permission = mongoose.model<IPermission>(MODELS.PERMISSIONS, permissionSchema);
+// Prevent duplicate model compilation
+let Permission: mongoose.Model<IPermission>;
+try {
+  Permission = mongoose.model<IPermission>(MODELS.PERMISSIONS);
+} catch {
+  Permission = mongoose.model<IPermission>(MODELS.PERMISSIONS, permissionSchema);
+}
+export { Permission };

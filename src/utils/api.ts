@@ -1,11 +1,8 @@
 import axios from 'axios';
-
-import { Env } from '@/libs/Env';
-
 import { getToken, removeToken } from './token';
 
 const api = axios.create({
-  baseURL: Env.NEXT_PUBLIC_BACKEND_URL,
+  baseURL: '', // Use relative URLs for Next.js API routes
 });
 
 // Intercept requests to attach JWT token
