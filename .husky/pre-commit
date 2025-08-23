@@ -1,13 +1,14 @@
-#!/bin/sh
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
 
-# Get the name of the branch being committed to
-branch_name=$(git symbolic-ref HEAD | sed -e 's,.*/\(.*\),\1,')
+echo "🔍 Pre-commit hook: Validating build..."
 
-# Check if the branch is main or dev
-if [ "$branch_name" = "main" ] || [ "$branch_name" = "dev" ] || [ "$branch_name" = "master" ] ; then
-  echo "Pushing to $branch_name branch is not allowed. Create a branch and make a pull request instead."
-  exit 1
+# Run a quick build check
+if npm run build > /dev/null 2>&1; then
+    echo "✅ Build validation passed"
+    exit 0
+else
+    echo "❌ Build validation failed! Please fix build errors before committing."
+    echo "💡 Run 'npm run build' to see detailed error messages."
+    exit 1
 fi
-
-# Disable concurent to run `check-types` after ESLint in lint-staged
-# cd "$(dirname "$0")/.." && npx --no lint-staged --concurrent false
