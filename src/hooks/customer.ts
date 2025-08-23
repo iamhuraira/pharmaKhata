@@ -79,14 +79,21 @@ const deleteCustomer = async (customerId: string) => {
   return response.json();
 };
 
-const recordPayment = async (_paymentData: any) => {
-  // This would create a ledger transaction for customer payment
-  // For now, return success
-  return { 
-    name: 'Payment',
-    message: 'Payment recorded successfully',
-    response: { data: { message: 'Payment recorded successfully' } }
-  };
+const recordPayment = async (paymentData: any) => {
+  const response = await fetch(`/api/customers/${paymentData.customerId}/payments`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(paymentData),
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to record payment');
+  }
+  
+  return response.json();
 };
 
 // Get all customers with filters

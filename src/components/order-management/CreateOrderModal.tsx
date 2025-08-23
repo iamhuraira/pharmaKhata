@@ -71,7 +71,7 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
 
   // Handle product selection
   const handleProductSelect = (productId: string) => {
-    const product = products.find((p: any) => p.id === productId);
+    const product = (products || []).find((p: any) => p.id === productId);
     setSelectedProduct(product || null);
     if (product) {
       setItemQty(1);
@@ -273,7 +273,9 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
                 }
                 onChange={handleProductSelect}
               >
-                              {products.map((product: any) => (
+                              {productsLoading ? (
+                <Option disabled>Loading products...</Option>
+              ) : (products || []).map((product: any) => (
                 <Option key={product.id} value={product.id}>
                   {product.name} - {product.packType} (PKR {product.price.toLocaleString()})
                 </Option>

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Card, Typography, Button, Avatar, Tag, Tabs, List, Statistic, Row, Col, Empty, Spin } from 'antd';
 import { UserOutlined, PhoneOutlined, EnvironmentOutlined, CalendarOutlined, DollarOutlined, PlusOutlined, MailOutlined, CreditCardOutlined } from '@ant-design/icons';
 import CustomerPaymentModal from '@/components/customer-management/CustomerPaymentModal';
-import { useGetCustomerById, useGetCustomerTransactions } from '@/hooks/customer';
+import { useGetCustomerById, useGetCustomerTransactions, useRecordPayment } from '@/hooks/customer';
 import { useGetOrders } from '@/hooks/order';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
@@ -34,6 +34,7 @@ const CustomerDetailPage = () => {
   const { customer, isLoading: customerLoading, error: customerError } = useGetCustomerById(customerId);
   const { transactions, summary, isLoading: transactionsLoading, error: transactionsError } = useGetCustomerTransactions(customerId);
   const { orders: allOrders } = useGetOrders();
+  const { recordPayment, isLoading: isRecordingPayment } = useRecordPayment();
 
   const getTransactionIcon = (type: string) => {
     switch (type) {
@@ -132,24 +133,60 @@ const CustomerDetailPage = () => {
     );
   }
 
-  // Calculate real-time statistics
+    // Calculate real-time statistics
   const totalOrders = summary?.totalOrders || 0;
-  const totalPayments = summary?.totalPayments || 0;
+  let totalPayments = summary?.totalPayments || 0;
   const totalAdvances = summary?.totalAdvances || 0;
-  // const totalAdvanceAllocations = summary?.totalAdvanceAllocations || 0;
-  const currentBalance = customer.balance || 0;
+  const totalAdvanceAllocations = summary?.totalAdvanceAllocations || 0;
   
   // Calculate outstanding amount from transactions (more accurate)
   const outstandingAmount = summary?.outstandingAmount || 0;
   
+  // Debug logging for summary data
+  console.log(`🔍 Customer ${customerId} - Summary:`, summary);
+  console.log(`🔍 Customer ${customerId} - Transactions:`, transactions);
+  console.log(`🔍 Customer ${customerId} - Total Payments:`, totalPayments);
+  console.log(`🔍 Customer ${customerId} - Total Advances:`, totalAdvances);
+  console.log(`🔍 Customer ${customerId} - Total Advance Allocations:`, totalAdvanceAllocations);
+  
   // Filter orders for this customer
-  const customerOrders = allOrders.filter((order: any) => order.customer?.id === customerId);
+  const customerOrders = allOrders.filter((order: any) => {
+    // Handle both customer.id (string) and customer._id (string) cases
+    let orderCustomerId = order.customer?.id || order.customer?._id;
+    
+    // If customer is a full object, try to get the ID from it
+    if (typeof orderCustomerId === 'object' && orderCustomerId !== null) {
+      orderCustomerId = orderCustomerId.id || orderCustomerId._id;
+    }
+    
+    return orderCustomerId === customerId;
+  });
+  
   const outstandingOrders = customerOrders.filter((order: any) => 
     order.status === 'created' || order.status === 'partial'
   );
   
+  // Debug logging
+  console.log(`🔍 Customer ${customerId} - All orders:`, allOrders);
+  console.log(`🔍 Customer ${customerId} - Filtered orders:`, customerOrders);
+  console.log(`🔍 Customer ${customerId} - Outstanding orders:`, outstandingOrders);
+  
+  // Fallback: Calculate payments from orders if summary is 0
+  if (totalPayments === 0 && customerOrders.length > 0) {
+    totalPayments = customerOrders.reduce((sum: number, order: any) => {
+      const amountReceived = order.totals?.amountReceived || 0;
+      console.log(`🔍 Order ${order.orderId || order.id} - Amount Received:`, amountReceived);
+      return sum + amountReceived;
+    }, 0);
+    console.log(`🔍 Fallback Total Payments calculated from orders:`, totalPayments);
+  }
+  
   // Use the more accurate outstanding amount from transactions
   const totalOutstandingAmount = outstandingAmount > 0 ? outstandingAmount : 0;
+  
+  // Calculate current balance - if customer owes money, show negative balance
+  // If they have advance, show positive balance
+  const currentBalance = totalOutstandingAmount > 0 ? -totalOutstandingAmount : (customer.balance || 0);
 
   return (
     <div className="p-4">
@@ -197,7 +234,7 @@ const CustomerDetailPage = () => {
           <Card className="text-center">
             <Statistic
               title="Current Balance"
-              value={currentBalance}
+              value={Math.abs(currentBalance)}
               precision={2}
               valueStyle={{ 
                 color: currentBalance >= 0 ? '#3f8600' : '#cf1322',
@@ -205,6 +242,7 @@ const CustomerDetailPage = () => {
                 fontWeight: 'bold'
               }}
               suffix="PKR"
+              prefix={currentBalance < 0 ? "-" : ""}
             />
           </Card>
         </Col>
@@ -212,6 +250,15 @@ const CustomerDetailPage = () => {
           <Card className="text-center">
             <Statistic
               title="Total Orders"
+              value={customerOrders.length}
+              suffix="orders"
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card className="text-center">
+            <Statistic
+              title="Total Order Value"
               value={totalOrders}
               precision={2}
               suffix="PKR"
@@ -228,16 +275,7 @@ const CustomerDetailPage = () => {
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card className="text-center">
-            <Statistic
-              title="Total Advances"
-              value={totalAdvances}
-              precision={2}
-              suffix="PKR"
-            />
-          </Card>
-        </Col>
+
       </Row>
 
       {/* Outstanding Orders & Due Amount */}
@@ -347,6 +385,77 @@ const CustomerDetailPage = () => {
            </div>
          </div>
         
+        {/* Financial Summary */}
+        <Card title="Financial Summary" className="mb-6">
+          <Row gutter={16}>
+            <Col xs={24} md={6}>
+              <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <Text strong className="text-blue-600 text-lg">Net Position</Text>
+                <div className="mt-2">
+                  {currentBalance < 0 ? (
+                    <Text strong className="text-red-600 text-2xl">
+                      -{Math.abs(currentBalance).toLocaleString()} PKR
+                    </Text>
+                  ) : currentBalance > 0 ? (
+                    <Text strong className="text-green-600 text-2xl">
+                      +{currentBalance.toLocaleString()} PKR
+                    </Text>
+                  ) : (
+                    <Text strong className="text-gray-600 text-2xl">
+                      0.00 PKR
+                    </Text>
+                  )}
+                </div>
+                <Text type="secondary" className="text-sm">
+                  {currentBalance < 0 ? 'Customer owes this amount' : 
+                   currentBalance > 0 ? 'Customer has advance credit' : 
+                   'Account is balanced'}
+                </Text>
+              </div>
+            </Col>
+            <Col xs={24} md={6}>
+              <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+                <Text strong className="text-green-600 text-lg">Order Count</Text>
+                <div className="mt-2">
+                  <Text strong className="text-green-600 text-2xl">
+                    {customerOrders.length}
+                  </Text>
+                </div>
+                <Text type="secondary" className="text-sm">
+                  Number of orders placed
+                </Text>
+              </div>
+            </Col>
+            <Col xs={24} md={6}>
+              <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-200">
+                <Text strong className="text-purple-600 text-lg">Order Value</Text>
+                <div className="mt-2">
+                  <Text strong className="text-purple-600 text-2xl">
+                    {totalOrders.toLocaleString()} PKR
+                  </Text>
+                </div>
+                <Text type="secondary" className="text-sm">
+                  Total value of all orders
+                </Text>
+              </div>
+            </Col>
+            <Col xs={24} md={6}>
+              <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <Text strong className="text-blue-600 text-lg">Payment Breakdown</Text>
+                <div className="mt-2">
+                  <Text strong className="text-blue-600 text-lg">
+                    {totalPayments.toLocaleString()} PKR
+                  </Text>
+                </div>
+                <Text type="secondary" className="text-xs">
+                  {totalPayments > 0 ? `Debt: ${(totalPayments - totalAdvances).toLocaleString()} | Advance: ${totalAdvances.toLocaleString()}` : 'No payments'}
+                </Text>
+              </div>
+            </Col>
+
+          </Row>
+        </Card>
+
         {/* Recent Orders */}
         {customerOrders.length > 0 && (
           <div className="mt-6">
@@ -410,8 +519,17 @@ const CustomerDetailPage = () => {
                 <div>
                   <Text strong>Address:</Text>
                   <Text className="ml-2">
-                    {customer.address || 'Address not specified'}
+                    {typeof customer.address === 'string' 
+                      ? customer.address 
+                      : customer.address?.street || 'Address not specified'
+                    }
                   </Text>
+                  {/* Debug: Show address structure */}
+                  {process.env.NODE_ENV === 'development' && customer.address && (
+                    <Text type="secondary" className="text-xs block mt-1">
+                      Debug: {JSON.stringify(customer.address)}
+                    </Text>
+                  )}
                 </div>
               </div>
             </div>
@@ -592,13 +710,20 @@ const CustomerDetailPage = () => {
       <CustomerPaymentModal
         visible={isPaymentModalOpen}
         onCancel={() => setIsPaymentModalOpen(false)}
-        onSubmit={(paymentData) => {
-          console.log('Payment submitted:', paymentData);
-          setIsPaymentModalOpen(false);
+        onSubmit={async (paymentData) => {
+          try {
+            await recordPayment(paymentData);
+            setIsPaymentModalOpen(false);
+            // The hook will automatically refresh the data
+          } catch (error) {
+            console.error('Payment failed:', error);
+            // Error is handled by the hook
+          }
         }}
         customerId={customerId}
         customerName={`${customer.firstName} ${customer.lastName}`}
         dueAmount={totalOutstandingAmount}
+        loading={isRecordingPayment}
       />
     </div>
   );

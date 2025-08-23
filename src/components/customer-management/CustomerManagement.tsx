@@ -66,13 +66,41 @@ const CustomerManagement = () => {
 
   // Calculate due amount for each customer
   const calculateCustomerDueAmount = (customerId: string) => {
-    const customerOrders = allOrders.filter((order: any) => order.customer?.id === customerId);
+    console.log(`🔍 Looking for orders for customer ID: ${customerId}`);
+    console.log(`🔍 All orders:`, allOrders);
+    
+    // Try different ways to match customer
+    const customerOrders = allOrders.filter((order: any) => {
+      // Handle both customer.id (string) and customer._id (string) cases
+      let orderCustomerId = order.customer?.id || order.customer?._id;
+      
+      // If customer is a full object, try to get the ID from it
+      if (typeof orderCustomerId === 'object' && orderCustomerId !== null) {
+        orderCustomerId = orderCustomerId.id || orderCustomerId._id;
+      }
+      
+      const matches = orderCustomerId === customerId;
+      console.log(`🔍 Order customer:`, order.customer);
+      console.log(`🔍 Order customer ID: ${orderCustomerId}, customer ID: ${customerId}, matches: ${matches}`);
+      return matches;
+    });
+    
     const outstandingOrders = customerOrders.filter((order: any) => 
       order.status === 'created' || order.status === 'partial'
     );
-    const totalOutstandingAmount = outstandingOrders.reduce((sum: number, order: any) => 
-      sum + (order.totals?.balance || 0), 0
-    );
+    
+    // Debug logging
+    console.log(`🔍 Customer ${customerId} orders:`, customerOrders);
+    console.log(`🔍 Outstanding orders:`, outstandingOrders);
+    
+    const totalOutstandingAmount = outstandingOrders.reduce((sum: number, order: any) => {
+      const balance = order.totals?.balance || order.balance || 0;
+      console.log(`🔍 Order ${order.orderId || order.id} balance:`, balance);
+      return sum + balance;
+    }, 0);
+    
+    console.log(`🔍 Total outstanding amount for customer ${customerId}:`, totalOutstandingAmount);
+    
     return {
       dueAmount: totalOutstandingAmount,
       outstandingOrdersCount: outstandingOrders.length
@@ -156,18 +184,20 @@ const CustomerManagement = () => {
             </Text>
           </Card>
         ) : (
-          // Customer cards
-          filteredCustomers.map((customer: any) => {
-            const { dueAmount, outstandingOrdersCount } = calculateCustomerDueAmount(customer.id);
-            return (
-              <CustomerCard 
-                key={customer.id} 
-                customer={customer} 
-                dueAmount={dueAmount}
-                outstandingOrdersCount={outstandingOrdersCount}
-              />
-            );
-          })
+                  // Customer cards
+        filteredCustomers.map((customer: any) => {
+          console.log(`🔍 Processing customer:`, customer);
+          const { dueAmount, outstandingOrdersCount } = calculateCustomerDueAmount(customer.id);
+          console.log(`🔍 Customer ${customer.firstName} ${customer.lastName} - Due: ${dueAmount}, Orders: ${outstandingOrdersCount}`);
+          return (
+            <CustomerCard 
+              key={customer.id} 
+              customer={customer} 
+              dueAmount={dueAmount}
+              outstandingOrdersCount={outstandingOrdersCount}
+            />
+          );
+        })
         )}
       </div>
 

@@ -70,6 +70,9 @@ export async function GET(
       }
     });
 
+    // Include advance payments in total payments (customer pays money)
+    const totalCustomerPayments = totalPayments + totalAdvances;
+    
     // Calculate outstanding amount
     const outstandingAmount = totalOrders - totalPayments - totalAdvanceAllocations;
 
@@ -91,7 +94,7 @@ export async function GET(
         transactions: mappedTransactions,
         summary: {
           totalOrders,
-          totalPayments,
+          totalPayments: totalCustomerPayments, // Now includes advance payments
           totalAdvances,
           totalAdvanceAllocations,
           outstandingAmount

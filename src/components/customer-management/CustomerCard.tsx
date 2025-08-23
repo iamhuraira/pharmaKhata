@@ -218,14 +218,14 @@ const CustomerCard = ({ customer, dueAmount = 0, outstandingOrdersCount = 0 }: C
                   )}
                 </div>
               </div>
-            ) : customer.balance && customer.balance < 0 ? (
+            ) : customer.balance && customer.balance > 0 ? (
               <div className='text-center mb-3'>
                 <div className='flex items-center justify-center space-x-2 mb-2'>
                   <div className='w-3 h-3 rounded-full bg-green-500'></div>
                   <Text className='text-base font-bold text-green-600'>ADVANCE BALANCE</Text>
                 </div>
                 <div className='flex items-center justify-center space-x-2 mb-2'>
-                  <Text className='text-2xl font-black text-green-600'>{Math.abs(customer.balance).toLocaleString()}</Text>
+                  <Text className='text-2xl font-black text-green-600'>{customer.balance.toLocaleString()}</Text>
                   <Text className='text-base text-green-500 font-bold'>PKR</Text>
                 </div>
                 <div className='text-center space-y-1'>
@@ -243,10 +243,7 @@ const CustomerCard = ({ customer, dueAmount = 0, outstandingOrdersCount = 0 }: C
                   <div className='w-3 h-3 rounded-full bg-gray-500'></div>
                   <Text className='text-base font-bold text-gray-600'>BALANCED</Text>
                 </div>
-                <div className='flex items-center justify-center space-x-2 mb-2'>
-                  <Text className='text-2xl font-black text-gray-600'>0</Text>
-                  <Text className='text-base text-gray-500 font-bold'>PKR</Text>
-                </div>
+
                 <div className='text-center'>
                   <Text className='block text-sm font-semibold text-gray-700'>
                     No outstanding amount
