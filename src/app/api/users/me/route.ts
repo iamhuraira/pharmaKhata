@@ -23,10 +23,10 @@ export async function GET(request: NextRequest) {
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
     
     try {
-      // Check if JWT_SECRET is configured
-      const jwtSecret = process.env.JWT_SECRET;
+      // Check if JWT_SECRET_KEY is configured
+      const jwtSecret = process.env.JWT_SECRET_KEY;
       if (!jwtSecret) {
-        console.warn('JWT_SECRET environment variable is not set');
+        console.warn('JWT_SECRET_KEY environment variable is not set');
         return NextResponse.json({
           success: false,
           message: 'Authentication not properly configured'
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       const decoded = jwt.verify(token, jwtSecret) as any;
       
       // Get user with role populated
-      const user = await User.findById(decoded.userId)
+      const user = await User.findById(decoded.id)
         .populate('role')
         .select('-password')
         .lean();
