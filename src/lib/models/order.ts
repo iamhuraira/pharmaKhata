@@ -1,188 +1,163 @@
-import mongoose, { Document, Schema, Types } from 'mongoose';
-import { MODELS } from '../constants/common';
+import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IOrderItem {
-  productId: Types.ObjectId;
-  productName: string;
-  quantity: number;
-  unitPrice: number;
-  totalPrice: number;
-  costPrice: number;
-  profit: number;
+  productId: mongoose.Types.ObjectId;
+  qty: number;
+  price: number;
+  discount?: number;
+  total: number;
+}
+
+export interface IOrderPayment {
+  method: 'cash' | 'jazzcash' | 'bank' | 'card' | 'advance' | 'other';
+  amount: number;
+  reference?: string;
+  date: Date;
+  type: 'advance' | 'payment' | 'refund';
+}
+
+export interface IOrderMeta {
+  counter?: string;
+  salesman?: string;
+  notes?: string;
+}
+
+export interface IOrderTotals {
+  subTotal: number;
+  discountTotal: number;
+  taxTotal: number;
+  grandTotal: number;
+  amountReceived: number;
+  balance: number;
+  advanceUsed: number;
+  changeGiven?: number;
 }
 
 export interface IOrder extends Document {
-  _id: Types.ObjectId;
-  orderNumber: string;
-  customerId: Types.ObjectId;
-  customerName: string;
-  customerPhone: string;
-  customerAddress: string;
+  orderId: string;
+  customer: {
+    id: mongoose.Types.ObjectId;
+    name: string;
+    phone: string;
+  };
   items: IOrderItem[];
-  subtotal: number;
-  shippingFee: number;
-  discount: number;
-  totalAmount: number;
-  totalCost: number;
-  totalProfit: number;
-  paymentMethod: string;
-  paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
-  orderStatus: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   notes?: string;
-  orderDate: Date;
-  deliveryDate?: Date;
+  payment?: IOrderPayment;
+  paymentHistory?: IOrderPayment[];
+  meta?: IOrderMeta;
+  totals: IOrderTotals;
+  status: 'created' | 'paid' | 'partial' | 'cancelled' | 'completed';
   createdAt: Date;
   updatedAt: Date;
 }
 
-const orderItemSchema = new Schema<IOrderItem>({
-  productId: {
-    type: Schema.Types.ObjectId,
-    ref: MODELS.PRODUCTS,
-    required: true,
-  },
-  productName: {
-    type: String,
-    required: true,
-  },
-  quantity: {
-    type: Number,
-    required: true,
-    min: 1,
-  },
-  unitPrice: {
-    type: Number,
-    required: true,
-    min: 0,
-  },
-  totalPrice: {
-    type: Number,
-    required: true,
-    min: 0,
-  },
-  costPrice: {
-    type: Number,
-    required: true,
-    min: 0,
-  },
-  profit: {
-    type: Number,
-    required: true,
-  },
+const OrderItemSchema = new Schema<IOrderItem>({
+  productId: { type: Schema.Types.ObjectId, ref: 'products', required: true },
+  qty: { type: Number, required: true, min: 1 },
+  price: { type: Number, required: true, min: 0 },
+  discount: { type: Number, default: 0, min: 0 },
+  total: { type: Number, required: true, min: 0 }
 });
 
-const orderSchema = new Schema<IOrder>({
-  orderNumber: {
-    type: String,
-    required: true,
-    unique: true,
+const OrderPaymentSchema = new Schema<IOrderPayment>({
+  method: { 
+    type: String, 
+    required: true, 
+    enum: ['cash', 'jazzcash', 'bank', 'card', 'advance', 'other'] 
   },
-  customerId: {
-    type: Schema.Types.ObjectId,
-    ref: MODELS.USERS,
-    required: true,
+  amount: { type: Number, required: true, min: 0 },
+  reference: { type: String },
+  date: { type: Date, default: Date.now },
+  type: { 
+    type: String, 
+    required: true, 
+    enum: ['advance', 'payment', 'refund'] 
+  }
+});
+
+const OrderMetaSchema = new Schema<IOrderMeta>({
+  counter: { type: String },
+  salesman: { type: String },
+  notes: { type: String }
+});
+
+const OrderTotalsSchema = new Schema<IOrderTotals>({
+  subTotal: { type: Number, required: true, min: 0 },
+  discountTotal: { type: Number, default: 0, min: 0 },
+  taxTotal: { type: Number, default: 0, min: 0 },
+  grandTotal: { type: Number, required: true, min: 0 },
+  amountReceived: { type: Number, default: 0, min: 0 },
+  balance: { type: Number, required: true },
+  advanceUsed: { type: Number, default: 0, min: 0 },
+  changeGiven: { type: Number, default: 0, min: 0 }
+});
+
+const OrderSchema = new Schema<IOrder>({
+  orderId: { 
+    type: String, 
+    required: false, 
+    unique: true 
   },
-  customerName: {
-    type: String,
-    required: true,
+  customer: {
+    id: { type: Schema.Types.ObjectId, ref: 'users', required: true },
+    name: { type: String, required: true },
+    phone: { type: String, required: true }
   },
-  customerPhone: {
-    type: String,
-    required: true,
-  },
-  customerAddress: {
-    type: String,
-    required: true,
-  },
-  items: [orderItemSchema],
-  subtotal: {
-    type: Number,
-    required: true,
-    min: 0,
-  },
-  shippingFee: {
-    type: Number,
-    default: 0,
-    min: 0,
-  },
-  discount: {
-    type: Number,
-    default: 0,
-    min: 0,
-  },
-  totalAmount: {
-    type: Number,
-    required: true,
-    min: 0,
-  },
-  totalCost: {
-    type: Number,
-    required: true,
-    min: 0,
-  },
-  totalProfit: {
-    type: Number,
-    required: true,
-  },
-  paymentMethod: {
-    type: String,
-    required: true,
-    enum: ['easypaisa', 'jazzcash', 'cash', 'bank_transfer', 'other'],
-  },
-  paymentStatus: {
-    type: String,
-    required: true,
-    enum: ['pending', 'paid', 'failed', 'refunded'],
-    default: 'pending',
-  },
-  orderStatus: {
-    type: String,
-    required: true,
-    enum: ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'],
-    default: 'pending',
-  },
-  notes: {
-    type: String,
-  },
-  orderDate: {
-    type: Date,
-    default: Date.now,
-  },
-  deliveryDate: {
-    type: Date,
-  },
+  items: [OrderItemSchema],
+  notes: { type: String },
+  payment: OrderPaymentSchema,
+  paymentHistory: [OrderPaymentSchema],
+  meta: OrderMetaSchema,
+  totals: { type: OrderTotalsSchema, required: true },
+  status: { 
+    type: String, 
+    required: true, 
+    enum: ['created', 'paid', 'partial', 'cancelled', 'completed'],
+    default: 'created'
+  }
 }, {
-  timestamps: true,
+  timestamps: true
 });
 
-// Generate order number before saving
-orderSchema.pre('save', async function(next) {
-  if (this.isNew) {
-    const date = new Date();
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
+// Pre-save middleware to generate orderId
+OrderSchema.pre('save', async function(next) {
+  try {
+    if (this.isNew && !this.orderId) {
+      const OrderModel = this.constructor as any;
+      const count = await OrderModel.countDocuments();
+      this.orderId = `ORD-${String(count + 1).padStart(4, '0')}`;
+    }
+    next();
+  } catch (error) {
+    next(error as Error);
+  }
+});
+
+// Pre-save middleware to calculate totals
+OrderSchema.pre('save', function(next) {
+  if (this.items && this.items.length > 0) {
+    // Calculate subtotal (no item-level discounts)
+    this.totals.subTotal = this.items.reduce((sum, item) => {
+      const itemTotal = item.qty * item.price;
+      return sum + itemTotal;
+    }, 0);
     
-    // Get count of orders for today
-    const todayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    const todayEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
+    // Discount total is now managed at order level, not item level
+    // Keep existing discountTotal from API calculation
     
-    const orderCount = await mongoose.model(MODELS.ORDERS).countDocuments({
-      createdAt: { $gte: todayStart, $lt: todayEnd }
-    });
+    // Calculate grand total (subtotal - order discount + tax)
+    this.totals.grandTotal = this.totals.subTotal - this.totals.discountTotal + this.totals.taxTotal;
     
-    const orderNumber = `DESI-${year}${month}${day}-${String(orderCount + 1).padStart(3, '0')}`;
-    this.orderNumber = orderNumber;
+    // Calculate balance
+    this.totals.balance = this.totals.grandTotal - this.totals.amountReceived - this.totals.advanceUsed;
+    
+    // Calculate change given if overpaid
+    if (this.totals.amountReceived > this.totals.grandTotal) {
+      this.totals.changeGiven = this.totals.amountReceived - this.totals.grandTotal;
+      this.totals.balance = 0;
+    }
   }
   next();
 });
 
-// Prevent duplicate model compilation
-let Order: mongoose.Model<IOrder>;
-try {
-  Order = mongoose.model<IOrder>(MODELS.ORDERS);
-} catch {
-  Order = mongoose.model<IOrder>(MODELS.ORDERS, orderSchema);
-}
-
-export { Order };
+export const Order = mongoose.models.Order || mongoose.model<IOrder>('Order', OrderSchema);
