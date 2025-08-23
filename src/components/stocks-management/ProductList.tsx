@@ -68,7 +68,9 @@ const ProductList = () => {
     );
 
     // Get unique categories for filter dropdown
-    const categories = Array.from(new Set(products.map(product => product.categoryId.name))).sort();
+    const categories = Array.from(new Set(products.map(product => 
+      typeof product.categoryId === 'object' ? product.categoryId?.name || 'Uncategorized' : 'Uncategorized'
+    ))).sort();
 
     const filteredProducts = products.filter(product => {
         const matchesSearch = searchQuery === '' || (
@@ -77,7 +79,8 @@ const ProductList = () => {
             product.urduDescription?.includes(searchQuery) // Urdu doesn't need lowercase
         );
         
-        const matchesCategory = selectedCategory === 'all' || product.categoryId.name === selectedCategory;
+        const matchesCategory = selectedCategory === 'all' || 
+          (typeof product.categoryId === 'object' ? product.categoryId?.name : product.categoryId) === selectedCategory;
         
         return matchesSearch && matchesCategory;
     });
@@ -137,9 +140,9 @@ const ProductList = () => {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 gap-4">
-                    {filteredProducts.map((product: IProduct) => (
+                    {filteredProducts.map((product: IProduct, index: number) => (
                         <ProductCard
-                            key={product._id.toString()}
+                            key={product._id?.toString() || `product-${index}`}
                             product={product}
                         />
                     ))}

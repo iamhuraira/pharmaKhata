@@ -22,7 +22,10 @@ export const env = cleanEnv(process.env, {
   CORS_ORIGIN: str({ devDefault: 'http://localhost:3001;http://localhost:3000', default: 'http://localhost:3001;http://localhost:3000' }),
   COMMON_RATE_LIMIT_MAX_REQUESTS: num({ devDefault: 1000, default: 1000 }),
   COMMON_RATE_LIMIT_WINDOW_MS: num({ devDefault: 1000, default: 1000 }),
-  MONGO_URL: url({ devDefault: 'mongodb+srv://iamhuraira429:o0RO84l6TjbgQB5S@hurii.8wtzhom.mongodb.net/pharmaKhata?retryWrites=true&w=majority&appName=hurii', default: 'mongodb+srv://iamhuraira429:o0RO84l6TjbgQB5S@hurii.8wtzhom.mongodb.net/pharmaKhata?retryWrites=true&w=majority&appName=hurii' }),
+  MONGO_URL: str({ 
+    devDefault: process.env.MONGO_URL || 'mongodb://localhost:27017/pharmaKhata', 
+    default: 'mongodb+srv://iamhuraira429:o0RO84l6TjbgQB5S@hurii.8wtzhom.mongodb.net/pharmaKhata?retryWrites=true&w=majority&appName=hurii' 
+  }),
   JWT_SECRET_KEY: str({ devDefault: 'mySecret', default: 'mySecret' }),
   JWT_EXPIRES_IN: str({ devDefault: '1d', default: '1d' }),
   BCRYPT_SALT_ROUNDS: num({ devDefault: 10, default: 10 }),

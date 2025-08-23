@@ -34,7 +34,7 @@ export const useSignin = () => {
       if (data?.token) {
         setToken(data.token);
   //       if (data.emailVerified) {
-          queryClient.invalidateQueries({ queryKey: ["getMe"] });
+          queryClient.invalidateQueries({ queryKey: ["me"] });
           Cookies.set("emailVerified", "true");
           openToast("success", data.message || "Logged in successfully");
           router.push("/dashboard");
@@ -89,7 +89,7 @@ export const useSignup = () => {
   const onSuccess = (data: ISignupResponse) => {
     if (data?.token) {
       setToken(data.token);
-      queryClient.invalidateQueries({ queryKey: ["getMe"] });
+      queryClient.invalidateQueries({ queryKey: ["me"] });
       Cookies.set("emailVerified", "false");
       Cookies.set("VFEmail", data.email);
       requestEmailVerification();

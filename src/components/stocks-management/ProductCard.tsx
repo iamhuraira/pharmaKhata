@@ -100,7 +100,7 @@ const ProductCard = ({ product, className, isLoading }: ProductCardProps) => {
           'backdrop-blur-sm bg-white/95',
           className,
         )}
-        aria-labelledby={`product-${product._id}-title`}
+        aria-labelledby={`product-${product._id?.toString() || 'unknown'}-title`}
       >
         {/* Rectangular Edit Button */}
         <div className='absolute right-2 top-2 z-50'>
@@ -118,7 +118,7 @@ const ProductCard = ({ product, className, isLoading }: ProductCardProps) => {
         {/* Header Section - Mobile Optimized */}
         <header className='pr-16'>
           <h3
-            id={`product-${product._id}-title`}
+            id={`product-${product._id?.toString() || 'unknown'}-title`}
             className='mb-1 text-base font-semibold text-gray-900 leading-tight'
             title={product.name}
           >
@@ -128,7 +128,7 @@ const ProductCard = ({ product, className, isLoading }: ProductCardProps) => {
           {/* Category Badge - Single line for mobile */}
           <div className='mb-1'>
             <span className='inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md'>
-              {product.categoryId.name}
+              {typeof product.categoryId === 'object' ? product.categoryId?.name || 'Uncategorized' : 'Uncategorized'}
             </span>
           </div>
 

@@ -138,14 +138,17 @@ export async function GET(request: NextRequest) {
 
     // Map products to expected format
     const mappedProducts = products.map((product: any) => ({
+      _id: product._id,
       id: product._id,
       name: product.name,
       shortDescription: product.shortDescription,
       urduDescription: product.urduDescription,
       price: product.price,
       quantity: product.quantity,
-      categoryId: product.categoryId?._id,
-      categoryName: product.categoryId?.name,
+      categoryId: {
+        _id: product.categoryId?._id,
+        name: product.categoryId?.name || 'Uncategorized'
+      },
       size: product.size,
       packType: product.packType,
       createdAt: product.createdAt,

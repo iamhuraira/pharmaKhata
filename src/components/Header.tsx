@@ -39,7 +39,9 @@ export default function Header() {
 
   const [showMenu, setShowMenu] = useState<boolean>(false);
 
+  console.log('🔄 Header component rendering...');
   const { user } = useGetMe();
+  console.log('👤 Header user data:', user);
 
   useEffect(() => {
     const toggleProfileBox = (event: any) => {
