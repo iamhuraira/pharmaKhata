@@ -1,8 +1,6 @@
 import mongoose from "mongoose";
 import { env } from "@/config/envConfig";
 
-let isConnected = false;
-
 export const connectDB = async () => {
     // Check if already connected
     if (mongoose.connection.readyState === 1) {
@@ -18,7 +16,7 @@ export const connectDB = async () => {
         console.log('🔌 Connecting to MongoDB...');
         
         // Improved connection options with longer timeouts and better error handling
-        const conn = await mongoose.connect(env.MONGO_URL, {
+        await mongoose.connect(env.MONGO_URL, {
             maxPoolSize: 10,
             serverSelectionTimeoutMS: 30000, // Increased from 5000ms to 30000ms
             socketTimeoutMS: 45000,
@@ -28,7 +26,6 @@ export const connectDB = async () => {
             w: 'majority'
         });
 
-        isConnected = conn.connections?.[0]?.readyState === 1;
         console.log('✅ Database connected successfully');
         
         // Set up connection event handlers
@@ -38,12 +35,10 @@ export const connectDB = async () => {
         
         mongoose.connection.on('disconnected', () => {
             console.warn('⚠️ Database disconnected');
-            isConnected = false;
         });
         
         mongoose.connection.on('reconnected', () => {
             console.log('🔄 Database reconnected');
-            isConnected = true;
         });
         
     } catch (error) {

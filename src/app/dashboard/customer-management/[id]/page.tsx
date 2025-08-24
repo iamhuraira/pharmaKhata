@@ -1,10 +1,10 @@
-'use client';
+                                                                    'use client';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
-import { Card, Typography, Button, Avatar, Tag, Tabs, List, Statistic, Row, Col, Empty, Spin } from 'antd';
-import { UserOutlined, PhoneOutlined, EnvironmentOutlined, CalendarOutlined, DollarOutlined, PlusOutlined, MailOutlined, CreditCardOutlined } from '@ant-design/icons';
+import { Card, Typography, Button, Avatar, Tag, Tabs, List, Statistic, Row, Col, Empty, Spin, Popconfirm, message } from 'antd';
+  import { UserOutlined, PhoneOutlined, EnvironmentOutlined, CalendarOutlined, DollarOutlined, PlusOutlined, MailOutlined, CreditCardOutlined, DeleteOutlined } from '@ant-design/icons';
 import CustomerPaymentModal from '@/components/customer-management/CustomerPaymentModal';
-import { useGetCustomerById, useGetCustomerTransactions, useRecordPayment } from '@/hooks/customer';
+import { useDeleteCustomer, useGetCustomerById, useGetCustomerTransactions, useRecordPayment } from '@/hooks/customer';
 import { useGetOrders } from '@/hooks/order';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
@@ -35,6 +35,7 @@ const CustomerDetailPage = () => {
   const { transactions, summary, isLoading: transactionsLoading, error: transactionsError } = useGetCustomerTransactions(customerId);
   const { orders: allOrders } = useGetOrders();
   const { recordPayment, isLoading: isRecordingPayment } = useRecordPayment();
+  const { deleteCustomer } = useDeleteCustomer();
 
   const getTransactionIcon = (type: string) => {
     switch (type) {
@@ -103,6 +104,17 @@ const CustomerDetailPage = () => {
         return 'Company Remittance';
       default:
         return type.charAt(0).toUpperCase() + type.slice(1);
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await deleteCustomer(customerId);
+      message.success('Customer deleted successfully');
+      // Redirect back to customers list
+      window.location.href = '/dashboard/customer-management';
+    } catch (error) {
+      message.error('Failed to delete customer');
     }
   };
 
@@ -189,7 +201,7 @@ const CustomerDetailPage = () => {
   const currentBalance = totalOutstandingAmount > 0 ? -totalOutstandingAmount : (customer.balance || 0);
 
   return (
-    <div className="p-4">
+    <div className="px-2 py-4">
       {/* Header */}
       <div className="mb-6">
         <Button 
@@ -217,21 +229,39 @@ const CustomerDetailPage = () => {
             </div>
           </div>
           
-          <Button 
-            type="primary" 
-            icon={<PlusOutlined />}
-            onClick={() => setIsPaymentModalOpen(true)}
-            className="bg-primary hover:bg-primaryDark"
-          >
-            Record Payment
-          </Button>
+          <div className="flex items-center space-x-3">
+            <Popconfirm
+              title="Delete Customer"
+              description="Are you sure you want to delete this customer? This action cannot be undone."
+              onConfirm={handleDelete}
+              okText="Yes, Delete"
+              cancelText="Cancel"
+              okType="danger"
+            >
+              <Button 
+                danger
+                icon={<DeleteOutlined />}
+                className="border-red-300 hover:border-red-400"
+              >
+                Delete Customer
+              </Button>
+            </Popconfirm>
+            <Button 
+              type="primary" 
+              icon={<PlusOutlined />}
+              onClick={() => setIsPaymentModalOpen(true)}
+              className="bg-primary hover:bg-primaryDark"
+            >
+              Record Payment
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Customer Stats */}
-      <Row gutter={16} className="mb-6">
-        <Col xs={24} sm={12} lg={6}>
-          <Card className="text-center">
+              {/* Customer Stats */}
+        <Row gutter={16} className="mb-6">
+          <Col xs={24} sm={12} lg={6}>
+            <Card className="text-center" bodyStyle={{ padding: '16px 12px' }}>
             <Statistic
               title="Current Balance"
               value={Math.abs(currentBalance)}
@@ -247,7 +277,7 @@ const CustomerDetailPage = () => {
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card className="text-center">
+          <Card className="text-center" bodyStyle={{ padding: '16px 12px' }}>
             <Statistic
               title="Total Orders"
               value={customerOrders.length}
@@ -256,7 +286,7 @@ const CustomerDetailPage = () => {
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card className="text-center">
+          <Card className="text-center" bodyStyle={{ padding: '16px 12px' }}>
             <Statistic
               title="Total Order Value"
               value={totalOrders}
@@ -266,7 +296,7 @@ const CustomerDetailPage = () => {
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card className="text-center">
+          <Card className="text-center" bodyStyle={{ padding: '16px 12px' }}>
             <Statistic
               title="Total Payments"
               value={totalPayments}
@@ -279,10 +309,10 @@ const CustomerDetailPage = () => {
       </Row>
 
       {/* Outstanding Orders & Due Amount */}
-      <Card title="Outstanding Orders & Due Amount" className="mb-6">
+      <Card title="Outstanding Orders & Due Amount" className="mb-6" bodyStyle={{ padding: '16px 12px' }}>
         <Row gutter={16}>
-          <Col xs={24} md={12}>
-            <Card className="text-center border-2 border-orange-200 bg-orange-50">
+                      <Col xs={24} md={12}>
+              <Card className="text-center border-2 border-orange-200 bg-orange-50" bodyStyle={{ padding: '16px 12px' }}>
               <Statistic
                 title="Outstanding Orders Count"
                 value={outstandingOrders.length}
@@ -298,8 +328,8 @@ const CustomerDetailPage = () => {
               </Text>
             </Card>
           </Col>
-          <Col xs={24} md={12}>
-            <Card className="text-center border-2 border-red-200 bg-red-50">
+                      <Col xs={24} md={12}>
+              <Card className="text-center border-2 border-red-200 bg-red-50" bodyStyle={{ padding: '16px 12px' }}>
               <Statistic
                 title="Total Due Amount"
                 value={totalOutstandingAmount}
@@ -386,10 +416,10 @@ const CustomerDetailPage = () => {
          </div>
         
         {/* Financial Summary */}
-        <Card title="Financial Summary" className="mb-6">
+        <Card title="Financial Summary" className="mb-6" bodyStyle={{ padding: '16px 12px' }}>
           <Row gutter={16}>
             <Col xs={24} md={6}>
-              <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-200">
                 <Text strong className="text-blue-600 text-lg">Net Position</Text>
                 <div className="mt-2">
                   {currentBalance < 0 ? (
@@ -414,7 +444,7 @@ const CustomerDetailPage = () => {
               </div>
             </Col>
             <Col xs={24} md={6}>
-              <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+              <div className="text-center p-3 bg-green-50 rounded-lg border border-green-200">
                 <Text strong className="text-green-600 text-lg">Order Count</Text>
                 <div className="mt-2">
                   <Text strong className="text-green-600 text-2xl">
@@ -427,7 +457,7 @@ const CustomerDetailPage = () => {
               </div>
             </Col>
             <Col xs={24} md={6}>
-              <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-200">
+              <div className="text-center p-3 bg-purple-50 rounded-lg border border-purple-200">
                 <Text strong className="text-purple-600 text-lg">Order Value</Text>
                 <div className="mt-2">
                   <Text strong className="text-purple-600 text-2xl">
@@ -440,7 +470,7 @@ const CustomerDetailPage = () => {
               </div>
             </Col>
             <Col xs={24} md={6}>
-              <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-200">
                 <Text strong className="text-blue-600 text-lg">Payment Breakdown</Text>
                 <div className="mt-2">
                   <Text strong className="text-blue-600 text-lg">
@@ -462,7 +492,7 @@ const CustomerDetailPage = () => {
             <Text strong className="text-gray-700 mb-3 block">Recent Orders:</Text>
             <div className="space-y-2">
               {customerOrders.slice(0, 5).map((order: any) => (
-                <div key={order._id} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg">
+                <div key={order._id} className="flex items-center justify-between p-2 bg-white border border-gray-200 rounded-lg">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3">
                       <Text strong className="text-blue-600">{order.orderId}</Text>
@@ -572,7 +602,7 @@ const CustomerDetailPage = () => {
       </Card>
 
       {/* Transactions and Payments */}
-      <Card title="Transactions & Payments">
+      <Card title="Transactions & Payments" bodyStyle={{ padding: '16px 12px' }}>
         <Tabs 
           defaultActiveKey="transactions"
           items={[

@@ -1,5 +1,5 @@
   import dotenv from 'dotenv';
-import { cleanEnv, host, num, port, str, testOnly, url } from 'envalid';
+import { cleanEnv, host, num, port, str, testOnly } from 'envalid';
 import fs from 'fs';
 import path from 'path';
 

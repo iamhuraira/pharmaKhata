@@ -68,19 +68,27 @@ export default function Header() {
       {/* mobile header */}
       <div className="mb-3 w-full flex bg-gradient-to-r from-white via-gray-50 to-white border-b border-gray-200 shadow-lg p-4 lg:hidden">
         <div className="flex w-full items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button
-              className="p-2.5 rounded-xl bg-gradient-to-r from-blue-50 to-purple-50 hover:from-blue-100 hover:to-purple-100 transition-all duration-200 shadow-sm border border-blue-100"
-              onClick={() => dispatch(toggleSidebar())}
-            >
-              <HamBurger className="text-blue-600" />
-            </button>
+          <div className="flex items-center gap-2 md:gap-3">
+              <button
+                className="p-2.5 rounded-xl bg-gradient-to-r from-indigo-50 to-emerald-50 hover:from-indigo-100 hover:to-emerald-100 transition-all duration-200 shadow-sm border border-indigo-100"
+                onClick={() => dispatch(toggleSidebar())}
+              >
+                <HamBurger className="text-indigo-600" />
+              </button>
 
-            <div className="relative">
-              <CompanyLogo className="h-[45px] w-[120px] drop-shadow-sm" />
-              <div className="absolute -bottom-1 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full"></div>
+              <div className="relative">
+                <CompanyLogo className="h-[45px] w-[120px] drop-shadow-sm" />
+                <div className="absolute -bottom-1 left-0 right-0 h-0.5 bg-gradient-to-r from-indigo-500 via-sky-400 to-emerald-400 rounded-full"></div>
+              </div>
+              
+              {/* Page-specific titles for mobile */}
+              {pathname?.includes('/customer-management') && (
+                <>
+                  <span className="h-6 w-px rounded-full bg-gradient-to-b from-indigo-500 via-sky-400 to-emerald-400" />
+                  <h1 className="text-lg md:text-xl font-semibold tracking-tight" data-testid="header-page-title">Customer Management</h1>
+                </>
+              )}
             </div>
-          </div>
 
           <div
             className="flex h-full cursor-pointer items-center gap-3"
@@ -93,12 +101,12 @@ export default function Header() {
                   <div className="text-sm font-bold text-gray-900">
                     {user.firstName} {user.lastName}
                   </div>
-                  <div className="text-xs text-gray-500 bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent font-medium">
+                  <div className="text-xs text-gray-500 bg-gradient-to-r from-indigo-500 to-emerald-600 bg-clip-text text-transparent font-medium">
                     Tap for menu
                   </div>
                 </div>
                 <div className="relative group">
-                  <div className="p-1 rounded-full bg-gradient-to-r from-blue-500 to-purple-600">
+                  <div className="p-1 rounded-full bg-gradient-to-r from-indigo-500 to-emerald-600">
                     <Image
                       src={user.profilePicture || "/assets/images/user_profile.png"}
                       alt="User profile"
@@ -108,7 +116,7 @@ export default function Header() {
                     />
                   </div>
                   <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white shadow-sm"></div>
-                  <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-500/20 to-purple-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-r from-indigo-500/20 to-emerald-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                 </div>
               </div>
             )}
@@ -142,14 +150,22 @@ export default function Header() {
         )}
       >
         <div className="flex w-full items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 md:gap-2">
+            <div className="flex items-center gap-2">
               <div className="w-2 h-8 bg-gradient-to-b from-blue-500 to-purple-600 rounded-full"></div>
               <Typography className="text-gray-800" type="title" size="regular">
                 {pathItem
                   ? sidebarItems.find((item) => item.href === pathItem)?.title
                   : "Dashboard"}
               </Typography>
+            
+            
+            {/* Page-specific titles */}
+            {pathname?.includes('/customer-management') && (
+              <>
+                <h1 className="text-lg md:text-xl font-semibold tracking-tight" data-testid="header-page-title">Customer Management</h1>
+              </>
+            )}
             </div>
           </div>
 
@@ -172,7 +188,7 @@ export default function Header() {
                 </div>
 
                 <div className="relative group">
-                  <div className="p-1.5 rounded-full bg-gradient-to-r from-blue-500 to-purple-600">
+                  <div className="p-1.5 rounded-full bg-gradient-to-r from-indigo-500 to-emerald-600">
                     <Image
                       src={
                         user?.profilePicture || "/assets/images/user_profile.png"
@@ -184,7 +200,7 @@ export default function Header() {
                     />
                   </div>
                   <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white shadow-sm"></div>
-                  <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-500/20 to-purple-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-r from-indigo-500/20 to-emerald-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                 </div>
               </>
             )}
