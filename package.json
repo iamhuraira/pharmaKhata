@@ -55,6 +55,7 @@
     "js-cookie": "^3.0.5",
     "jsdom": "^26.0.0",
     "jsonwebtoken": "^9.0.2",
+    "lucide-react": "^0.511.0",
     "mongoose": "^8.16.5",
     "next": "^15.0.3",
     "or": "^0.2.0",

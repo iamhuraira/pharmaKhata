@@ -15,7 +15,7 @@ export interface ILedgerTransaction extends Document {
   txnId: string;
   date: Date;
   type: 'sale' | 'purchase' | 'payment' | 'expense' | 'company_remit' | 'commission' | 'advance' | 'refund' | 'adjustment' | 'other';
-  method: 'cash' | 'jazzcash' | 'bank' | 'card' | 'advance' | 'other';
+  method: 'cash' | 'jazzcash' | 'bank' | 'card' | 'advance' | 'on_account' | 'other';
   description: string;
   ref?: ILedgerRef;
   credit: number;
@@ -58,7 +58,7 @@ const LedgerTransactionSchema = new Schema<ILedgerTransaction>({
   method: { 
     type: String, 
     required: true,
-    enum: ['cash', 'jazzcash', 'bank', 'card', 'advance', 'other']
+    enum: ['cash', 'jazzcash', 'bank', 'card', 'advance', 'on_account', 'other']
   },
   description: { 
     type: String, 
@@ -124,6 +124,33 @@ LedgerTransactionSchema.pre('save', async function(next) {
     next();
   } catch (error) {
     next(error as Error);
+  }
+});
+
+// Pre-save middleware to calculate running balance
+LedgerTransactionSchema.pre('save', async function(next) {
+  try {
+    if (this.isNew) {
+      // Get the last transaction to calculate running balance
+      const lastTransaction = await mongoose.model('LedgerTransaction').findOne()
+        .sort({ date: -1, createdAt: -1 })
+        .lean();
+      
+      const lastBalance = lastTransaction ? (lastTransaction as any).runningBalance : 0;
+      const currentTransactionImpact = (this.credit || 0) - (this.debit || 0);
+      
+      // Calculate new running balance
+      this.runningBalance = lastBalance + currentTransactionImpact;
+      
+      console.log(`🔍 Ledger Transaction: Credit=${this.credit}, Debit=${this.debit}, Impact=${currentTransactionImpact}, Last Balance=${lastBalance}, New Balance=${this.runningBalance}`);
+    }
+    
+    next();
+  } catch (error) {
+    console.error('Error calculating running balance:', error);
+    // Set a default running balance if calculation fails
+    this.runningBalance = 0;
+    next();
   }
 });
 

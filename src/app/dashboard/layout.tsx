@@ -11,7 +11,7 @@ export default function DashboardLayout(props: { children: React.ReactNode }) {
         <div className="max-h-full w-full overflow-auto">
           <Header />
 
-          <main className="mx-5 md:mx-8">{props.children}</main>
+          <main className="mx-3 md:mx-5">{props.children}</main>
         </div>
       </div>
     </BaseTemplate>

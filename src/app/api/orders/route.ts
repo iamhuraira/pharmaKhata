@@ -111,10 +111,15 @@ export async function POST(request: NextRequest) {
       balance = grandTotal - amountReceived;
     }
 
-    // For on_account orders, set amountReceived to 0
+    // For on_account orders, set amountReceived to 0 and handle payment object
     if (payment?.method === 'on_account') {
       amountReceived = 0;
       // Balance remains as calculated above (grandTotal - advanceUsed)
+      // Set payment type to on_account
+      if (payment) {
+        payment.type = 'on_account';
+        payment.amount = 0; // Set amount to 0 for on_account orders
+      }
     }
 
     // Create order
@@ -131,7 +136,8 @@ export async function POST(request: NextRequest) {
       notes,
       payment: payment ? {
         ...payment,
-        type: 'payment'
+        type: payment.method === 'on_account' ? 'on_account' : 'payment',
+        amount: payment.method === 'on_account' ? 0 : (payment.amount || 0)
       } : undefined,
       meta,
       totals: {
@@ -166,7 +172,7 @@ export async function POST(request: NextRequest) {
     const ledgerTransaction = new LedgerTransaction({
       date: new Date(),
       type: 'sale',
-      method: payment?.method || 'advance', // Use payment method or default to advance for on_account orders
+      method: payment?.method === 'on_account' ? 'on_account' : (payment?.method || 'advance'),
       description: `Order ${order.orderId} - ${customerExists.firstName} ${customerExists.lastName}`,
       ref: {
         customerId: customer.id,

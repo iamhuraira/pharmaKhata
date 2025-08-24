@@ -30,6 +30,53 @@ const LedgerPage = () => {
     q: searchQuery || undefined
   });
 
+  // Debug: Log the summary data to see what we're receiving
+  console.log('🔍 Ledger Summary Data:', summary);
+  console.log('🔍 Total Credit:', summary?.totals?.credit);
+  console.log('🔍 Total Debit:', summary?.totals?.debit);
+  console.log('🔍 Opening Balance:', summary?.openingBalance);
+  console.log('🔍 Closing Balance:', summary?.totals?.closingBalance);
+
+  // Calculate running balance for each transaction (MONTH-SPECIFIC)
+  const transactionsWithRunningBalance = transactions.reduce((acc: any[], transaction: any, index: number) => {
+    if (index === 0) {
+      // First transaction of the month: opening balance + current transaction impact
+      const openingBalance = summary?.openingBalance || 0;
+      const transactionImpact = (transaction.credit || 0) - (transaction.debit || 0);
+      const runningBalance = openingBalance + transactionImpact;
+      
+      console.log(`🔍 Month: ${selectedMonth} - Transaction ${index + 1}: Credit=${transaction.credit}, Debit=${transaction.debit}, Impact=${transactionImpact}, Opening=${openingBalance}, Running=${runningBalance}`);
+      
+      acc.push({
+        ...transaction,
+        calculatedRunningBalance: runningBalance
+      });
+    } else {
+      // Subsequent transactions of the month: previous running balance + current transaction impact
+      const previousTransaction = acc[index - 1];
+      const previousBalance = previousTransaction.calculatedRunningBalance;
+      const transactionImpact = (transaction.credit || 0) - (transaction.debit || 0);
+      const runningBalance = previousBalance + transactionImpact;
+      
+      console.log(`🔍 Month: ${selectedMonth} - Transaction ${index + 1}: Credit=${transaction.credit}, Debit=${transaction.debit}, Impact=${transactionImpact}, Previous=${previousBalance}, Running=${runningBalance}`);
+      
+      acc.push({
+        ...transaction,
+        calculatedRunningBalance: runningBalance
+      });
+    }
+    
+    return acc;
+  }, []);
+
+  // Debug: Show monthly summary
+  console.log(`🔍 Monthly Summary for ${selectedMonth}:`);
+  console.log(`  - Opening Balance: ${summary?.openingBalance || 0}`);
+  console.log(`  - Monthly Credits: ${summary?.totals?.credit || 0}`);
+  console.log(`  - Monthly Debits: ${summary?.totals?.debit || 0}`);
+  console.log(`  - Closing Balance: ${summary?.totals?.closingBalance || 0}`);
+  console.log(`  - Transactions Count: ${transactions.length}`);
+
   const { isLoading: summaryLoading } = useGetMonthlySummary(selectedMonth);
 
   // Handle transaction creation success
@@ -39,22 +86,11 @@ const LedgerPage = () => {
     message.success('Transaction created successfully!');
   };
 
-  // Filter transactions based on search query
-  const filteredTransactions = transactions.filter((transaction: any) => {
-    if (!searchQuery) return true;
-    const searchLower = searchQuery.toLowerCase();
-    return (
-      transaction.description?.toLowerCase().includes(searchLower) ||
-      transaction.type?.toLowerCase().includes(searchLower) ||
-      transaction.method?.toLowerCase().includes(searchLower) ||
-      transaction.ref?.party?.toLowerCase().includes(searchLower) ||
-      transaction.ref?.orderId?.toLowerCase().includes(searchLower)
-    );
-  });
+  // Filter transactions based on search query (now handled inline in the table)
 
   // Calculate statistics
-  const totalCredit = summary?.totalCredit || 0;
-  const totalDebit = summary?.totalDebit || 0;
+  const totalCredit = summary?.totals?.credit || 0;
+  const totalDebit = summary?.totals?.debit || 0;
   const netCashFlow = totalCredit - totalDebit;
   const transactionCount = transactions.length;
 
@@ -212,14 +248,23 @@ const LedgerPage = () => {
     },
     {
       title: 'Running Balance',
-      dataIndex: 'runningBalance',
-      key: 'runningBalance',
-      render: (balance: number) => (
-        <Text strong className={balance >= 0 ? 'text-green-600' : 'text-red-600'}>
-          PKR {balance.toLocaleString()}
-        </Text>
-      ),
-      sorter: (a: any, b: any) => a.runningBalance - b.runningBalance,
+      dataIndex: 'calculatedRunningBalance',
+      key: 'calculatedRunningBalance',
+      render: (_: number, record: any) => {
+        // Use calculated running balance if available, otherwise fall back to database value
+        const runningBalance = record.calculatedRunningBalance !== undefined ? record.calculatedRunningBalance : (record.runningBalance || 0);
+        
+        return (
+          <Text strong className={runningBalance >= 0 ? 'text-green-600' : 'text-red-600'}>
+            PKR {runningBalance.toLocaleString()}
+          </Text>
+        );
+      },
+      sorter: (a: any, b: any) => {
+        const balanceA = a.calculatedRunningBalance !== undefined ? a.calculatedRunningBalance : (a.runningBalance || 0);
+        const balanceB = b.calculatedRunningBalance !== undefined ? b.calculatedRunningBalance : (b.runningBalance || 0);
+        return balanceA - balanceB;
+      },
     },
   ];
 
@@ -334,9 +379,9 @@ const LedgerPage = () => {
         </Col>
       </Row>
 
-      {/* Opening/Closing Balance */}
+      {/* Monthly Balance Progression */}
       <Row gutter={16} className="mb-6">
-        <Col xs={24} sm={12}>
+        <Col xs={24} sm={8}>
           <Card className="text-center">
             <Statistic
               title="Opening Balance"
@@ -345,17 +390,37 @@ const LedgerPage = () => {
               suffix="PKR"
               valueStyle={{ color: '#1890ff' }}
             />
+            <div className="text-xs text-gray-500 mt-1">
+              Balance at start of {dayjs(selectedMonth).format('MMMM YYYY')}
+            </div>
           </Card>
         </Col>
-        <Col xs={24} sm={12}>
+        <Col xs={24} sm={8}>
+          <Card className="text-center">
+            <Statistic
+              title="Monthly Net Flow"
+              value={netCashFlow}
+              precision={2}
+              suffix="PKR"
+              valueStyle={{ color: netCashFlow >= 0 ? '#52c41a' : '#cf1322' }}
+            />
+            <div className="text-xs text-gray-500 mt-1">
+              Net change this month
+            </div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={8}>
           <Card className="text-center">
             <Statistic
               title="Closing Balance"
-              value={summary?.closingBalance || 0}
+              value={summary?.totals?.closingBalance || 0}
               precision={2}
               suffix="PKR"
               valueStyle={{ color: '#722ed1' }}
             />
+            <div className="text-xs text-gray-500 mt-1">
+              Balance at end of {dayjs(selectedMonth).format('MMMM YYYY')}
+            </div>
           </Card>
         </Col>
       </Row>
@@ -415,10 +480,28 @@ const LedgerPage = () => {
       </Card>
 
       {/* Transactions Table */}
-      <Card title={`Transactions for ${dayjs(selectedMonth).format('MMMM YYYY')}`}>
+      <Card 
+        title={`Transactions for ${dayjs(selectedMonth).format('MMMM YYYY')}`}
+        extra={
+          <div className="text-sm text-gray-500">
+            <div>📊 Running Balance shows cumulative balance for this month only</div>
+            <div>💡 Starting from Opening Balance: PKR {summary?.openingBalance?.toLocaleString() || '0'}</div>
+          </div>
+        }
+      >
         <Table
           columns={columns}
-          dataSource={filteredTransactions}
+          dataSource={transactionsWithRunningBalance.filter((transaction: any) => {
+            if (!searchQuery) return true;
+            const searchLower = searchQuery.toLowerCase();
+            return (
+              transaction.description?.toLowerCase().includes(searchLower) ||
+              transaction.type?.toLowerCase().includes(searchLower) ||
+              transaction.method?.toLowerCase().includes(searchLower) ||
+              transaction.ref?.party?.toLowerCase().includes(searchLower) ||
+              transaction.ref?.orderId?.toLowerCase().includes(searchLower)
+            );
+          })}
           rowKey={(record) => record._id || record.id}
           loading={transactionsLoading}
           pagination={{

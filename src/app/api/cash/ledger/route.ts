@@ -126,6 +126,15 @@ export async function GET(request: NextRequest) {
       runningBalance: txn.runningBalance || 0
     }));
 
+    // Debug logging
+    console.log('🔍 API Response Data:');
+    console.log('  - Month:', month);
+    console.log('  - Opening Balance:', opening);
+    console.log('  - Total Credit:', totalCredit);
+    console.log('  - Total Debit:', totalDebit);
+    console.log('  - Closing Balance:', closingBalance);
+    console.log('  - Transaction Count:', transactions.length);
+
     return NextResponse.json({
       success: true,
       data: {

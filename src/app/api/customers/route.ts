@@ -76,8 +76,8 @@ export async function POST(request: NextRequest) {
           party: `${firstName} ${lastName}`,
           txnNo: advance.reference
         },
-        credit: 0,
-        debit: advance.amount, // Advance payment is debit (customer pays you)
+        credit: advance.amount, // ✅ FIXED: Advance payment is CREDIT (you receive money)
+        debit: 0,               // ✅ FIXED: No debit for advance payment
         runningBalance: 0 // Will be calculated by middleware
       });
 

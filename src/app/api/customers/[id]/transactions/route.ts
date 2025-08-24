@@ -63,10 +63,12 @@ export async function GET(
         totalOrders += txn.debit || 0;
       } else if (txn.type === 'payment') {
         totalPayments += txn.credit || 0;
-      } else if (txn.type === 'advance' && txn.debit > 0) {
-        totalAdvances += txn.debit || 0;
       } else if (txn.type === 'advance' && txn.credit > 0) {
-        totalAdvanceAllocations += txn.credit || 0;
+        // ✅ FIXED: Customer gives advance payment (CREDIT for you)
+        totalAdvances += txn.credit || 0;
+      } else if (txn.type === 'advance' && txn.debit > 0) {
+        // ✅ FIXED: Advance allocation to order (reduces what customer owes)
+        totalAdvanceAllocations += txn.debit || 0;
       }
     });
 

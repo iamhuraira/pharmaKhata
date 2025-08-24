@@ -1,15 +1,19 @@
 // components/CustomerManagement.tsx
 'use client';
-import { useState, useEffect } from 'react';
-import { Button, Input, Modal, Card, Typography, Divider, Switch, Select, DatePicker, Table, Avatar, Tag } from 'antd';
-import { UserAddOutlined, SearchOutlined, PhoneOutlined, EnvironmentOutlined, MailOutlined, DollarOutlined, AppstoreOutlined, UnorderedListOutlined, UserOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { useState } from 'react';
+import { Button, Input, Modal, Card, Typography, Divider, Switch, Select, DatePicker, Avatar, Table } from 'antd';
+import { UserAddOutlined, SearchOutlined, PhoneOutlined, EnvironmentOutlined, MailOutlined, DollarOutlined, UserOutlined } from '@ant-design/icons';
+import { Eye } from 'lucide-react';
+import clsx from 'clsx';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import dayjs from 'dayjs';
-import { useRouter, useSearchParams } from 'next/navigation';
-import CustomerCard from './CustomerCard';
+import { useRouter } from 'next/navigation';
+
+import CustomerQuickView from './CustomerQuickView';
 import { useCreateCustomer, useGetAllCustomers } from '@/hooks/customer';
 import { useGetOrders } from '@/hooks/order';
+import { useGetAllCustomerBalances } from '@/hooks/customerBalance';
 
 const { Title, Text } = Typography;
 
@@ -28,230 +32,33 @@ const customerSchema = Yup.object().shape({
 
 const CustomerManagement = () => {
   const router = useRouter();
-  const searchParams = useSearchParams();
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
+  const [viewMode] = useState<'list'>('list');
+  const [quickViewCustomer, setQuickViewCustomer] = useState<any>(null);
+  const [isQuickViewVisible, setIsQuickViewVisible] = useState(false);
   const { createCustomer, isLoading } = useCreateCustomer();
   const { customers, isLoading: isLoadingCustomers } = useGetAllCustomers();
   const { orders: allOrders } = useGetOrders();
+  const { customerBalances } = useGetAllCustomerBalances();
 
-  // Table columns for list view
-  const tableColumns = [
-    {
-      title: 'Customer',
-      key: 'customer',
-      render: (customer: any) => {
-        console.log('🔍 Rendering Customer column for:', customer);
-        if (!customer || typeof customer !== 'object') {
-          console.warn('🔍 Invalid customer data in Customer column:', customer);
-          return <div>Invalid data</div>;
-        }
-        
-        // Handle case where fields might be objects
-        const firstName = typeof customer.firstName === 'string' ? customer.firstName : 'N/A';
-        const lastName = typeof customer.lastName === 'string' ? customer.lastName : '';
-        const phone = typeof customer.phone === 'string' ? customer.phone : 'No phone';
-        
-        return (
-          <div className="flex items-center space-x-3">
-            <Avatar 
-              size={40} 
-              icon={<UserOutlined />} 
-              className="bg-gradient-to-br from-primary to-blue-600"
-            />
-            <div>
-              <div className="font-semibold text-gray-900">
-                {firstName} {lastName}
-              </div>
-              <div className="text-sm text-gray-500">{phone}</div>
-            </div>
-          </div>
-        );
-      },
-    },
-    {
-      title: 'Address',
-      key: 'address',
-      render: (customer: any) => {
-        console.log('🔍 Rendering Address column for:', customer);
-        if (!customer || typeof customer !== 'object') {
-          console.warn('🔍 Invalid customer data in Address column:', customer);
-          return <div>Invalid data</div>;
-        }
-        
-        // Handle case where address might be an empty object
-        let addressText = 'No address';
-        if (customer.address) {
-          if (typeof customer.address === 'string' && customer.address.trim() !== '') {
-            addressText = customer.address;
-          } else if (typeof customer.address === 'object' && customer.address !== null) {
-            console.warn('🔍 Address is an object, not a string:', customer.address);
-            addressText = 'Invalid address format';
-          }
-        }
-        
-        return (
-          <div className="max-w-xs">
-            <div className="text-sm text-gray-900">{addressText}</div>
-            {customer.email && typeof customer.email === 'string' && customer.email.trim() !== '' && (
-              <div className="text-sm text-gray-500">{customer.email}</div>
-            )}
-          </div>
-        );
-      },
-    },
-    {
-      title: 'Orders',
-      key: 'orders',
-      render: (customer: any) => {
-        console.log('🔍 Rendering Orders column for:', customer);
-        if (!customer || typeof customer !== 'object') {
-          console.warn('🔍 Invalid customer data in Orders column:', customer);
-          return <div>Invalid data</div>;
-        }
-        try {
-          const result = calculateCustomerDueAmount(customer.id || customer._id);
-          console.log('🔍 Orders calculation result:', result);
-          const { outstandingOrdersCount } = result;
-          return (
-            <div className="text-center">
-              <div className="font-semibold text-gray-900">{outstandingOrdersCount || 0}</div>
-              <div className="text-sm text-gray-500">outstanding</div>
-            </div>
-          );
-        } catch (error) {
-          console.error('Error calculating orders for customer:', customer, error);
-          return (
-            <div className="text-center">
-              <div className="font-semibold text-gray-900">0</div>
-              <div className="text-sm text-gray-500">outstanding</div>
-            </div>
-          );
-        }
-      },
-    },
-    {
-      title: 'Due Amount',
-      key: 'dueAmount',
-      render: (customer: any) => {
-        console.log('🔍 Rendering Due Amount column for:', customer);
-        if (!customer || typeof customer !== 'object') {
-          console.warn('🔍 Invalid customer data in Due Amount column:', customer);
-          return <div>Invalid data</div>;
-        }
-        try {
-          const result = calculateCustomerDueAmount(customer.id || customer._id);
-          console.log('🔍 Due amount calculation result:', result);
-          const { dueAmount } = result;
-          return (
-            <div className={`text-right ${dueAmount > 0 ? 'text-red-600' : 'text-green-600'}`}>
-              <div className="font-semibold">
-                {dueAmount > 0 ? dueAmount.toLocaleString() : '0.00'} PKR
-              </div>
-              <div className="text-sm">
-                {dueAmount > 0 ? 'Outstanding' : 'Paid'}</div>
-            </div>
-          );
-        } catch (error) {
-          console.error('Error calculating due amount for customer:', customer, error);
-          return (
-            <div className="text-right text-green-600">
-              <div className="font-semibold">0.00 PKR</div>
-              <div className="text-sm">Paid</div>
-            </div>
-          );
-        }
-      },
-    },
-    {
-      title: 'Status',
-      key: 'status',
-      render: (customer: any) => {
-        console.log('🔍 Rendering Status column for:', customer);
-        if (!customer || typeof customer !== 'object') {
-          console.warn('🔍 Invalid customer data in Status column:', customer);
-          return <div>Invalid data</div>;
-        }
-        
-        // Handle case where status might be an object
-        const status = typeof customer.status === 'string' ? customer.status : 'active';
-        
-        return (
-          <Tag color={status === 'active' ? 'success' : 'default'}>
-            {status}
-          </Tag>
-        );
-      },
-    },
-    {
-      title: 'Actions',
-      key: 'actions',
-      render: (customer: any) => {
-        console.log('🔍 Rendering Actions column for:', customer);
-        if (!customer || typeof customer !== 'object') {
-          console.warn('🔍 Invalid customer data in Actions column:', customer);
-          return <div>Invalid data</div>;
-        }
-        return (
-          <div className="flex space-x-2">
-            <Button 
-              size="small" 
-              icon={<EditOutlined />}
-              className="text-blue-600 border-blue-300 hover:text-blue-700 hover:border-blue-400"
-            >
-              Edit
-            </Button>
-            <Button 
-              size="small" 
-              danger
-              icon={<DeleteOutlined />}
-              className="border-red-300 hover:border-red-400"
-            >
-              Delete
-            </Button>
-          </div>
-        );
-      },
-    },
-  ];
+  
 
-  // Handle view mode persistence
-  useEffect(() => {
-    if (!searchParams) return;
-    
-    const urlView = searchParams.get('view') as 'card' | 'list' | null;
-    const localStorageView = localStorage.getItem('customers:view') as 'card' | 'list' | null;
-    
-    const newView = urlView || localStorageView || 'card';
-    setViewMode(newView);
-    
-    // Update localStorage if it's different
-    if (localStorageView !== newView) {
-      localStorage.setItem('customers:view', newView);
-    }
-    
-    // Update URL if it's different and no view param exists
-    if (!urlView && newView !== 'card') {
-      const params = new URLSearchParams(searchParams.toString());
-      params.set('view', newView);
-      router.replace(`?${params.toString()}`, { scroll: false });
-    }
-  }, [searchParams, router]);
 
-  const handleViewToggle = (newView: 'card' | 'list') => {
-    setViewMode(newView);
-    localStorage.setItem('customers:view', newView);
-    
-    if (!searchParams) return;
-    
-    const params = new URLSearchParams(searchParams.toString());
-    if (newView === 'card') {
-      params.delete('view');
-    } else {
-      params.set('view', newView);
-    }
-    router.replace(`?${params.toString()}`, { scroll: false });
+
+  const openQuickView = (customer: any) => {
+    setQuickViewCustomer(customer);
+    setIsQuickViewVisible(true);
+  };
+
+  const closeQuickView = () => {
+    setIsQuickViewVisible(false);
+    setQuickViewCustomer(null);
+  };
+
+  const goToDetails = (customerId: string) => {
+    router.push(`/dashboard/customer-management/${customerId}`);
   };
 
   const initialValues = {
@@ -354,7 +161,7 @@ const CustomerManagement = () => {
   console.log('🔍 CustomerManagement render - viewMode:', viewMode, 'customers:', customers?.length, 'filtered:', filteredCustomers?.length);
   console.log('🔍 First customer:', filteredCustomers[0]);
   console.log('🔍 First customer keys:', filteredCustomers[0] ? Object.keys(filteredCustomers[0]) : 'No customers');
-  console.log('🔍 tableColumns:', tableColumns);
+
 
   return (
     <div className='px-4 max-w-7xl mx-auto'>
@@ -374,37 +181,7 @@ const CustomerManagement = () => {
           />
         </div>
 
-        {/* View Toggle */}
-        <div className="inline-flex rounded-xl border border-neutral-200 bg-white p-1 shadow-sm">
-          <button
-            data-testid="view-card"
-            onClick={() => handleViewToggle('card')}
-            className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-              viewMode === 'card' 
-                ? 'bg-neutral-900 text-white' 
-                : 'text-neutral-700 hover:bg-neutral-100'
-            }`}
-            aria-pressed={viewMode === 'card'}
-            aria-label="Card view"
-          >
-            <AppstoreOutlined className="mr-1" />
-            Card
-          </button>
-          <button
-            data-testid="view-list"
-            onClick={() => handleViewToggle('list')}
-            className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-              viewMode === 'card' 
-                ? 'text-neutral-700 hover:bg-neutral-100' 
-                : 'bg-neutral-900 text-white'
-            }`}
-            aria-pressed={viewMode === 'list'}
-            aria-label="List view"
-          >
-            <UnorderedListOutlined className="mr-1" />
-            List
-          </button>
-        </div>
+
 
         {/* Add Customer Button */}
         <div className='lg:w-auto'>
@@ -420,50 +197,27 @@ const CustomerManagement = () => {
         </div>
       </div>
 
-      {/* Customer List - Card or Table View */}
+      {/* Customer List - Table View Only */}
       <div className='space-y-4 lg:space-y-0'>
         {isLoadingCustomers ? (
-          // Loading skeletons - show appropriate skeleton based on view mode
-          viewMode === 'card' ? (
-            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6'>
-              {Array.from({ length: 8 }).map((_, index) => (
-                <Card key={index} className='animate-pulse border-0 bg-gradient-to-br from-white to-gray-50 rounded-2xl overflow-hidden shadow-sm h-48'>
-                  <div className='p-4'>
-                    <div className='flex items-center space-x-3 mb-4'>
-                      <div className='w-12 h-12 bg-gray-200 rounded-full'></div>
-                      <div className='flex-1 space-y-2'>
-                        <div className='h-4 bg-gray-200 rounded w-3/4'></div>
-                        <div className='h-3 bg-gray-200 rounded w-1/2'></div>
-                      </div>
-                    </div>
-                    <div className='space-y-2'>
-                      <div className='h-3 bg-gray-200 rounded w-full'></div>
-                      <div className='h-3 bg-gray-200 rounded w-2/3'></div>
-                      <div className='h-3 bg-gray-200 rounded w-1/2'></div>
-                    </div>
+          // Loading skeleton for table
+          <div className='space-y-3'>
+            {Array.from({ length: 5 }).map((_, index) => (
+              <div key={index} className="animate-pulse bg-white border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center space-x-4">
+                  <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+                    <div className="h-3 bg-gray-200 rounded w-1/3"></div>
                   </div>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {Array.from({ length: 5 }).map((_, index) => (
-                <div key={index} className="animate-pulse bg-white border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-                      <div className="h-3 bg-gray-200 rounded w-1/3"></div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="h-4 bg-gray-200 rounded w-16"></div>
-                      <div className="h-3 bg-gray-200 rounded w-20"></div>
-                    </div>
+                  <div className="space-y-2">
+                    <div className="h-4 bg-gray-200 rounded w-16"></div>
+                    <div className="h-3 bg-gray-200 rounded w-20"></div>
                   </div>
                 </div>
-              ))}
-            </div>
-          )
+              </div>
+            ))}
+          </div>
         ) : filteredCustomers.length === 0 ? (
           // Empty state
           <Card className='text-center py-16 border-0 bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-md'>
@@ -475,40 +229,147 @@ const CustomerManagement = () => {
               {searchQuery ? 'Try adjusting your search terms' : 'Start by adding your first customer to build your database'}
             </Text>
           </Card>
-        ) : viewMode === 'card' ? (
-          // Customer cards - Responsive grid
-          <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 lg:gap-6'>
-            {filteredCustomers.map((customer: any) => {
-              console.log(`🔍 Processing customer:`, customer);
-              try {
-                const { dueAmount, outstandingOrdersCount } = calculateCustomerDueAmount(customer.id || customer._id);
-                console.log(`🔍 Customer ${customer.firstName} ${customer.lastName} - Due: ${dueAmount}, Orders: ${outstandingOrdersCount}`);
-                return (
-                  <CustomerCard 
-                    key={customer.id || customer._id} 
-                    customer={customer} 
-                    dueAmount={dueAmount}
-                    outstandingOrdersCount={outstandingOrdersCount}
-                  />
-                );
-              } catch (error) {
-                console.error('Error processing customer:', customer, error);
-                return (
-                  <CustomerCard 
-                    key={customer.id || customer._id || Math.random()} 
-                    customer={customer} 
-                    dueAmount={0}
-                    outstandingOrdersCount={0}
-                  />
-                );
-              }
-            })}
-          </div>
         ) : (
-          // Customer table - List view
-          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+          // Customer table with Ant Design Table component
+          <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm" data-testid="customers-table">
             <Table
-              columns={tableColumns}
+              columns={[
+                {
+                  title: 'Customer',
+                  key: 'customer',
+                  width: '40%',
+                  render: (customer: any) => (
+                    <div className="flex items-center space-x-3 py-2">
+                      <Avatar 
+                        size={40} 
+                        icon={<UserOutlined />} 
+                        className="bg-gradient-to-br from-primary to-blue-600"
+                      />
+                      <div>
+                        <div className="font-semibold text-neutral-900 text-base">
+                          {customer.firstName} {customer.lastName}
+                        </div>
+                        <div className="text-sm text-neutral-500 mt-1">
+                          {customer.phone}
+                        </div>
+                      </div>
+                    </div>
+                  ),
+                },
+                {
+                  title: 'Outstanding Orders',
+                  key: 'orders',
+                  width: '20%',
+                  align: 'center' as const,
+                  render: (customer: any) => {
+                    let outstandingOrdersCount = 0;
+                    try {
+                      const result = calculateCustomerDueAmount(customer.id || customer._id);
+                      outstandingOrdersCount = result.outstandingOrdersCount;
+                    } catch (error) {
+                      console.error('Error calculating orders for customer:', error);
+                    }
+                    return (
+                      <div className="text-center py-2">
+                        <div className="font-semibold text-neutral-800 text-lg">{outstandingOrdersCount || 0}</div>
+                        <div className="text-xs text-neutral-500 mt-1">orders</div>
+                      </div>
+                    );
+                  },
+                },
+                {
+                  title: 'Balance',
+                  key: 'balance',
+                  width: '25%',
+                  align: 'right' as const,
+                  render: (customer: any) => {
+                    // Get balance from the new balance calculation system
+                    const customerId = customer.id || customer._id;
+                    const customerBalance = customerBalances?.find((cb: any) => 
+                      cb.customerId === customerId || cb.customerId === customer._id
+                    );
+                    
+                    let balance = 0;
+                    let balanceSource = 'unknown';
+                    
+                    if (customerBalance) {
+                      balance = customerBalance.balance || 0;
+                      balanceSource = 'ledger calculation';
+                      console.log(`🔍 Customer ${customer.firstName}: Balance from ledger = ${balance}`);
+                    } else {
+                      // Fallback to old calculation if balance not found
+                      try {
+                        const result = calculateCustomerDueAmount(customerId);
+                        balance = result.dueAmount;
+                        balanceSource = 'fallback calculation';
+                        console.log(`🔍 Customer ${customer.firstName}: Fallback balance = ${balance}`);
+                      } catch (error) {
+                        console.error(`Error calculating balance for customer ${customer.firstName}:`, error);
+                        balance = 0;
+                        balanceSource = 'error fallback';
+                      }
+                    }
+                    
+                    const isPositive = balance > 0;
+                    const isZero = balance === 0;
+                    const isNegative = balance < 0;
+                    
+                    console.log(`🔍 Final balance for ${customer.firstName}: ${balance} (${balanceSource}) - Positive:${isPositive}, Zero:${isZero}, Negative:${isNegative}`);
+                    
+                    return (
+                      <div className="text-right py-2">
+                        <div className={clsx(
+                          "font-semibold text-lg",
+                          isPositive ? "text-emerald-600" : 
+                          isNegative ? "text-rose-600" : "text-neutral-600"
+                        )}>
+                          {isPositive ? '+' : ''}{balance.toLocaleString()} <span className="font-normal text-neutral-500">PKR</span>
+                        </div>
+                        <div className={clsx(
+                          "text-sm mt-1",
+                          isPositive ? "text-emerald-500" : 
+                          isNegative ? "text-rose-500" : "text-neutral-500"
+                        )}>
+                          {isPositive ? 'Advance' : 
+                           isNegative ? 'Amount Due' : 'Settled'}
+                        </div>
+                        <div className="text-xs text-neutral-400 mt-1">
+                          {balanceSource}
+                        </div>
+                      </div>
+                    );
+                  },
+                },
+                {
+                  title: 'Actions',
+                  key: 'actions',
+                  width: '15%',
+                  align: 'center' as const,
+                  render: (customer: any) => (
+                    <div className="flex justify-center py-2">
+                      <button
+                        type="button"
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          goToDetails(customer.id || customer._id); 
+                        }}
+                        aria-label="Open customer details"
+                        data-testid={`view-${customer.id || customer._id}`}
+                        className="
+                          inline-flex h-9 w-9 items-center justify-center
+                          rounded-full
+                          bg-neutral-900/90 text-white
+                          hover:bg-neutral-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400/40
+                          transition-colors
+                        "
+                      >
+                        <Eye className="h-4 w-4" aria-hidden="true" />
+                        <span className="sr-only">View</span>
+                      </button>
+                    </div>
+                  ),
+                },
+              ]}
               dataSource={filteredCustomers.filter((customer: any) => {
                 // Ensure customer is a valid object with required properties
                 const isValid = customer && 
@@ -523,24 +384,61 @@ const CustomerManagement = () => {
                 
                 return isValid;
               })}
-              rowKey={(record) => {
-                const key = record.id || record._id || Math.random().toString();
-                console.log('🔍 Table row key:', key, 'for record:', record);
-                return key;
-              }}
+              rowKey={(record) => record.id || record._id || Math.random().toString()}
               pagination={{
                 pageSize: 10,
                 showSizeChanger: true,
                 showQuickJumper: true,
                 showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} customers`,
+                position: ['bottomCenter'],
+                className: 'customer-pagination',
               }}
               className="customer-table"
-              rowClassName="hover:bg-gray-50 transition-colors"
+              rowClassName="hover:bg-neutral-50 transition-colors cursor-pointer"
               size="middle"
+              onRow={(record) => ({
+                onClick: () => openQuickView(record),
+                onKeyDown: (e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    openQuickView(record);
+                  }
+                },
+                tabIndex: 0,
+                'data-testid': `row-${record.id || record._id}`,
+                role: 'button',
+                'aria-label': `View details for ${record.firstName} ${record.lastName}`,
+              })}
             />
           </div>
         )}
       </div>
+
+      {/* Customer Quick View Modal */}
+      <CustomerQuickView
+        customer={quickViewCustomer}
+        visible={isQuickViewVisible}
+        onClose={closeQuickView}
+        dueAmount={(() => {
+          try {
+            if (!quickViewCustomer) return 0;
+            const result = calculateCustomerDueAmount(quickViewCustomer.id || quickViewCustomer._id);
+            return result.dueAmount;
+          } catch (error) {
+            console.error('Error calculating due amount for quick view:', error);
+            return 0;
+          }
+        })()}
+        outstandingOrdersCount={(() => {
+          try {
+            if (!quickViewCustomer) return 0;
+            const result = calculateCustomerDueAmount(quickViewCustomer.id || quickViewCustomer._id);
+            return result.outstandingOrdersCount;
+          } catch (error) {
+            console.error('Error calculating orders for quick view:', error);
+            return 0;
+          }
+        })()}
+      />
 
       {/* Create Customer Modal */}
       <Modal

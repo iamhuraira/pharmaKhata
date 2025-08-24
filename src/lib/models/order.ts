@@ -9,11 +9,11 @@ export interface IOrderItem {
 }
 
 export interface IOrderPayment {
-  method: 'cash' | 'jazzcash' | 'bank' | 'card' | 'advance' | 'other';
-  amount: number;
+  method: 'cash' | 'jazzcash' | 'bank' | 'card' | 'advance' | 'on_account' | 'other';
+  amount?: number; // Made optional to support on_account orders
   reference?: string;
   date: Date;
-  type: 'advance' | 'payment' | 'refund';
+  type: 'advance' | 'payment' | 'refund' | 'on_account';
 }
 
 export interface IOrderMeta {
@@ -63,15 +63,19 @@ const OrderPaymentSchema = new Schema<IOrderPayment>({
   method: { 
     type: String, 
     required: true, 
-    enum: ['cash', 'jazzcash', 'bank', 'card', 'advance', 'other'] 
+    enum: ['cash', 'jazzcash', 'bank', 'card', 'advance', 'on_account', 'other'] 
   },
-  amount: { type: Number, required: true, min: 0 },
+  amount: { 
+    type: Number, 
+    required: function() { return this.method !== 'on_account'; }, // Only required if not on_account
+    min: 0 
+  },
   reference: { type: String },
   date: { type: Date, default: Date.now },
   type: { 
     type: String, 
     required: true, 
-    enum: ['advance', 'payment', 'refund'] 
+    enum: ['advance', 'payment', 'refund', 'on_account'] 
   }
 });
 
