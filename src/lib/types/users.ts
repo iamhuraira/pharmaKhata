@@ -36,6 +36,7 @@ export interface IUser {
   createdAt: string;
   updatedAt: string;
   profilePicture?: string;
+  balance?: number; // Customer balance field
 }
 
 export interface IUserDoc extends IUser, Document {

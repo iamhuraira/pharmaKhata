@@ -5,7 +5,7 @@ import { User } from '@/lib/models/user';
 import { Product } from '@/lib/models/product';
 import { Role } from '@/lib/models/roles';
 import { LedgerTransaction } from '@/lib/models/ledger';
-import { updateCustomerBalance, getCustomerBalanceFromDB } from '@/lib/utils/customerBalance';
+import { calculateCustomerBalance, calculateBalanceAfterOrder } from '@/lib/utils/customerBalance';
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,7 +20,6 @@ export async function POST(request: NextRequest) {
       customer,
       items,
       notes,
-      payment,
       meta,
       orderDiscount
     } = body;
@@ -91,36 +90,22 @@ export async function POST(request: NextRequest) {
     const taxTotal = 0; // For now, no tax
     const grandTotal = subTotal - discountTotal + taxTotal;
     
-    // Get current customer balance from database
-    const currentCustomerBalance = await getCustomerBalanceFromDB(customer.id);
-    
-    // Handle payment and advance logic
-    let amountReceived = payment?.amountReceived || 0;
+    // For on_account orders, no advance is used and full amount is due
+    const amountReceived = 0;
     let advanceUsed = 0;
-    let balance = grandTotal;
+    let balance = grandTotal; // Full amount is due initially
 
-    // Check if customer has advance balance to auto-allocate
+    // Get current customer balance using utility function
+    const currentBalanceInfo = await calculateCustomerBalance(customer.id);
+    const currentCustomerBalance = currentBalanceInfo.currentBalance;
+
+    // Check if customer has advance balance to auto-allocate even for on-account orders
     if (currentCustomerBalance > 0) { // Positive balance means advance available
       advanceUsed = Math.min(currentCustomerBalance, grandTotal);
       balance = grandTotal - advanceUsed;
       
-      console.log(`🔍 Advance Allocation: Customer has ${currentCustomerBalance} PKR advance, Order total: ${grandTotal} PKR`);
+      console.log(`🔍 On-Account Order with Advance: Customer has ${currentCustomerBalance} PKR advance, Order total: ${grandTotal} PKR`);
       console.log(`🔍 Advance used: ${advanceUsed} PKR, Balance due: ${balance} PKR`);
-    } else {
-      // No advance available, calculate balance based on amount received
-      balance = grandTotal - amountReceived;
-    }
-
-    // For on_account orders, set amountReceived to 0 and handle payment object
-    if (payment?.method === 'on_account') {
-      amountReceived = 0;
-      // Keep advanceUsed as calculated above (don't reset to 0)
-      // Balance remains as calculated above (grandTotal - advanceUsed)
-      // Set payment type to on_account
-      if (payment) {
-        payment.type = 'on_account';
-        payment.amount = 0; // Set amount to 0 for on_account orders
-      }
     }
 
     // Create order
@@ -135,11 +120,12 @@ export async function POST(request: NextRequest) {
         total: (item.qty * item.price) - ((item.discount || 0) * item.qty)
       })),
       notes,
-      payment: payment ? {
-        ...payment,
-        type: payment.method === 'on_account' ? 'on_account' : 'payment',
-        amount: payment.method === 'on_account' ? 0 : (payment.amount || 0)
-      } : undefined,
+      payment: {
+        method: 'on_account',
+        type: 'on_account',
+        amount: 0,
+        date: new Date()
+      },
       meta,
       totals: {
         subTotal,
@@ -150,7 +136,7 @@ export async function POST(request: NextRequest) {
         balance,
         advanceUsed
       },
-      status: balance <= 0 ? 'paid' : (advanceUsed > 0 ? 'partial' : 'created')
+      status: 'created' // Order created on account
     });
 
     await order.save();
@@ -170,38 +156,48 @@ export async function POST(request: NextRequest) {
     const lastBalance = lastTransaction ? lastTransaction.runningBalance : 0;
     const runningBalance = lastBalance; // No cash movement for order creation
 
-    // Create main order transaction (customer owes the NET amount after payments and advance)
     const ledgerTransaction = new LedgerTransaction({
       date: new Date(),
       type: 'sale',
-      method: payment?.method === 'on_account' ? 'on_account' : (payment?.method || 'advance'),
-      description: `Order ${order.orderId} - ${customerExists.firstName} ${customerExists.lastName}`,
+      method: 'on_account',
+      description: `Order ${order.orderId} - ${customerExists.firstName} ${customerExists.lastName} (On Account)`,
       ref: {
         customerId: customer.id,
         orderId: order.orderId,
         party: `${customerExists.firstName} ${customerExists.lastName}`
       },
       credit: 0,
-      debit: balance, // Debit shows NET amount owed (after payments and advance)
+      debit: grandTotal, // Debit increases AR (customer owes more)
       runningBalance
     });
 
     await ledgerTransaction.save();
 
-    // Update customer balance directly
-    // Customer owes more money (negative balance change)
-    await updateCustomerBalance(customer.id, -balance, 'order_creation');
+    // If advance was used, create allocation transaction
+    if (advanceUsed > 0) {
+      const allocationTransaction = new LedgerTransaction({
+        date: new Date(),
+        type: 'advance',
+        method: 'advance',
+        description: `Advance allocation to order ${order.orderId}`,
+        ref: {
+          customerId: customer.id,
+          orderId: order.orderId,
+          party: `${customerExists.firstName} ${customerExists.lastName}`,
+          txnNo: `ALLOC-${Date.now()}`
+        },
+        credit: advanceUsed, // Credit reduces AR (customer owes less)
+        debit: 0,            // No debit for advance allocation
+        runningBalance
+      });
 
-    // ❌ REMOVED: Additional on-account transaction creation
-    // The main transaction already shows the correct NET amount owed
-    // No need for additional transactions that would double-count the debt
-
-    // ❌ REMOVED: Advance allocation transaction creation
-    // Advance allocation is now handled internally in the balance calculation
-    // No need to create a separate ledger transaction for this
+      await allocationTransaction.save();
+      
+      console.log(`🔍 Advance Allocation: ${advanceUsed} PKR advance allocated to order ${order.orderId}`);
+    }
 
     // Calculate final customer balance after this order using utility function
-    const balanceAfterOrder = await getCustomerBalanceFromDB(customer.id);
+    const balanceAfterOrder = await calculateBalanceAfterOrder(customer.id, grandTotal);
 
     return NextResponse.json({
       success: true,
@@ -211,18 +207,18 @@ export async function POST(request: NextRequest) {
         totals: order.totals,
         customerBalance: {
           beforeOrder: currentCustomerBalance,
-          afterOrder: balanceAfterOrder,
+          afterOrder: balanceAfterOrder.afterOrder,
           orderTotal: grandTotal,
-          advanceUsed,
+          advanceUsed: 0,
           balanceDue: balance,
-          message: `Customer balance updated to ${balanceAfterOrder} PKR`
+          message: balanceAfterOrder.message
         }
       },
-      message: 'Order created successfully'
+      message: 'Order created on account successfully'
     }, { status: 201 });
 
   } catch (error) {
-    console.error('Create order error:', error);
+    console.error('Create on-account order error:', error);
     return NextResponse.json(
       {
         success: false,
@@ -230,80 +226,5 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 }
     );
-  }
-}
-
-export async function GET(request: NextRequest) {
-  try {
-    await connectDB();
-    
-    // Ensure all models are registered
-    User && Role;
-    
-    const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status');
-    const from = searchParams.get('from');
-    const to = searchParams.get('to');
-    const q = searchParams.get('q');
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
-
-    // Build filter
-    const filter: any = {};
-    
-    if (status && status !== 'all') {
-      filter.status = status;
-    }
-    
-    if (from || to) {
-      filter.createdAt = {};
-      if (from) filter.createdAt.$gte = new Date(from);
-      if (to) filter.createdAt.$lte = new Date(to);
-    }
-    
-    if (q) {
-      filter.$or = [
-        { 'customer.name': { $regex: q, $options: 'i' } },
-        { 'customer.phone': { $regex: q, $options: 'i' } },
-        { orderId: { $regex: q, $options: 'i' } }
-      ];
-    }
-
-    // Execute query
-    const skip = (page - 1) * limit;
-    
-    const [orders, total] = await Promise.all([
-      (Order as any).find(filter)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .populate('customer.id', 'firstName lastName phone')
-        .lean(),
-      (Order as any).countDocuments(filter)
-    ]);
-
-    const totalPages = Math.ceil(total / limit);
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        orders,
-        pagination: {
-          currentPage: page,
-          totalPages,
-          totalOrders: total,
-          hasNextPage: page < totalPages,
-          hasPrevPage: page > 1,
-          limit
-        }
-      }
-    });
-
-  } catch (error) {
-    console.error('Get orders error:', error);
-    return NextResponse.json({
-      success: false,
-      message: 'Internal server error'
-    }, { status: 500 });
   }
 }

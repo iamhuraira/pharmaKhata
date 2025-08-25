@@ -13,7 +13,6 @@ import { useRouter } from 'next/navigation';
 import CustomerQuickView from './CustomerQuickView';
 import { useCreateCustomer, useGetAllCustomers } from '@/hooks/customer';
 import { useGetOrders } from '@/hooks/order';
-import { useGetAllCustomerBalances } from '@/hooks/customerBalance';
 
 const { Title, Text } = Typography;
 
@@ -24,8 +23,12 @@ const customerSchema = Yup.object().shape({
     .required('Phone number is required')
     .matches(/^[0-9]{11}$/, 'Invalid phone number (11 digits required)'),
   email: Yup.string().email('Invalid email format').optional(),
-  address: Yup.string().required('Address is required'),
-  creditLimit: Yup.number().min(0, 'Credit limit must be positive').optional(),
+  address: Yup.object().shape({
+    street: Yup.string().required('Street is required'),
+    city: Yup.string().required('City is required'),
+    state: Yup.string().required('State is required'),
+    country: Yup.string().required('Country is required'),
+  }),
   hasAdvance: Yup.boolean(),
   advance: Yup.object().optional(),
 });
@@ -41,7 +44,6 @@ const CustomerManagement = () => {
   const { createCustomer, isLoading } = useCreateCustomer();
   const { customers, isLoading: isLoadingCustomers } = useGetAllCustomers();
   const { orders: allOrders } = useGetOrders();
-  const { customerBalances } = useGetAllCustomerBalances();
 
   
 
@@ -66,8 +68,12 @@ const CustomerManagement = () => {
     lastName: '',
     phone: '',
     email: '',
-    address: '',
-    creditLimit: 0,
+    address: {
+      street: '',
+      city: '',
+      state: '',
+      country: 'Pakistan'
+    },
     hasAdvance: false,
     advance: {
       amount: 0,
@@ -85,69 +91,17 @@ const CustomerManagement = () => {
       phone: values.phone,
       email: values.email,
       address: values.address,
-      creditLimit: values.creditLimit,
       advance: values.hasAdvance ? values.advance : undefined,
     };
     
+    console.log('🔍 Frontend - Form values:', values);
+    console.log('🔍 Frontend - Customer data being sent:', customerData);
+    console.log('🔍 Frontend - Address data:', values.address);
+    console.log('🔍 Frontend - Advance data:', values.advance);
+    console.log('🔍 Frontend - Has advance:', values.hasAdvance);
+    
     await createCustomer(customerData);
     setIsModalOpen(false);
-  };
-
-  // Calculate due amount for each customer
-  const calculateCustomerDueAmount = (customerId: string) => {
-    try {
-      console.log(`🔍 Looking for orders for customer ID: ${customerId}`);
-      console.log(`🔍 All orders:`, allOrders);
-      console.log(`🔍 Customer ID type:`, typeof customerId, 'Value:', customerId);
-      
-      if (!customerId) {
-        console.warn('🔍 No customer ID provided, returning default values');
-        return { dueAmount: 0, outstandingOrdersCount: 0 };
-      }
-      
-      // Try different ways to match customer
-      const customerOrders = allOrders.filter((order: any) => {
-        // Handle both customer.id (string) and customer._id (string) cases
-        let orderCustomerId = order.customer?.id || order.customer?._id;
-        
-        // If customer is a full object, try to get the ID from it
-        if (typeof orderCustomerId === 'object' && orderCustomerId !== null) {
-          orderCustomerId = orderCustomerId.id || orderCustomerId._id;
-        }
-        
-        const matches = orderCustomerId === customerId;
-        console.log(`🔍 Order customer:`, order.customer);
-        console.log(`🔍 Order customer ID: ${orderCustomerId}, customer ID: ${customerId}, matches: ${matches}`);
-        return matches;
-      });
-      
-      const outstandingOrders = customerOrders.filter((order: any) => 
-        order.status === 'created' || order.status === 'partial'
-      );
-      
-      // Debug logging
-      console.log(`🔍 Customer ${customerId} orders:`, customerOrders);
-      console.log(`🔍 Outstanding orders:`, outstandingOrders);
-      
-      const totalOutstandingAmount = outstandingOrders.reduce((sum: number, order: any) => {
-        const balance = order.totals?.balance || order.balance || 0;
-        console.log(`🔍 Order ${order.orderId || order.id} balance:`, balance);
-        return sum + balance;
-      }, 0);
-      
-      console.log(`🔍 Total outstanding amount for customer ${customerId}:`, totalOutstandingAmount);
-      
-      const result = {
-        dueAmount: totalOutstandingAmount || 0,
-        outstandingOrdersCount: outstandingOrders.length || 0
-      };
-      
-      console.log(`🔍 Returning result:`, result);
-      return result;
-    } catch (error) {
-      console.error('🔍 Error in calculateCustomerDueAmount:', error);
-      return { dueAmount: 0, outstandingOrdersCount: 0 };
-    }
   };
 
   // Filter customers based on search query
@@ -262,16 +216,11 @@ const CustomerManagement = () => {
                   width: '20%',
                   align: 'center' as const,
                   render: (customer: any) => {
-                    let outstandingOrdersCount = 0;
-                    try {
-                      const result = calculateCustomerDueAmount(customer.id || customer._id);
-                      outstandingOrdersCount = result.outstandingOrdersCount;
-                    } catch (error) {
-                      console.error('Error calculating orders for customer:', error);
-                    }
+                    // For now, show placeholder since we're focusing on balance
+                    // TODO: Add outstanding orders calculation when needed
                     return (
                       <div className="text-center py-2">
-                        <div className="font-semibold text-neutral-800 text-lg">{outstandingOrdersCount || 0}</div>
+                        <div className="font-semibold text-neutral-800 text-lg">-</div>
                         <div className="text-xs text-neutral-500 mt-1">orders</div>
                       </div>
                     );
@@ -283,38 +232,15 @@ const CustomerManagement = () => {
                   width: '25%',
                   align: 'right' as const,
                   render: (customer: any) => {
-                    // Get balance from the new balance calculation system
-                    const customerId = customer.id || customer._id;
-                    const customerBalance = customerBalances?.find((cb: any) => 
-                      cb.customerId === customerId || cb.customerId === customer._id
-                    );
-                    
-                    let balance = 0;
-                    let balanceSource = 'unknown';
-                    
-                    if (customerBalance) {
-                      balance = customerBalance.balance || 0;
-                      balanceSource = 'ledger calculation';
-                      console.log(`🔍 Customer ${customer.firstName}: Balance from ledger = ${balance}`);
-                    } else {
-                      // Fallback to old calculation if balance not found
-                      try {
-                        const result = calculateCustomerDueAmount(customerId);
-                        balance = result.dueAmount;
-                        balanceSource = 'fallback calculation';
-                        console.log(`🔍 Customer ${customer.firstName}: Fallback balance = ${balance}`);
-                      } catch (error) {
-                        console.error(`Error calculating balance for customer ${customer.firstName}:`, error);
-                        balance = 0;
-                        balanceSource = 'error fallback';
-                      }
-                    }
+                    // Get balance directly from customer object (new approach)
+                    const balance = customer.balance || 0;
+                    const balanceSource = 'database';
                     
                     const isPositive = balance > 0;
                     const isZero = balance === 0;
                     const isNegative = balance < 0;
                     
-                    console.log(`🔍 Final balance for ${customer.firstName}: ${balance} (${balanceSource}) - Positive:${isPositive}, Zero:${isZero}, Negative:${isNegative}`);
+                    console.log(`🔍 Customer ${customer.firstName}: Balance from database = ${balance}`);
                     
                     return (
                       <div className="text-right py-2">
@@ -418,225 +344,299 @@ const CustomerManagement = () => {
         customer={quickViewCustomer}
         visible={isQuickViewVisible}
         onClose={closeQuickView}
-        dueAmount={(() => {
-          try {
-            if (!quickViewCustomer) return 0;
-            const result = calculateCustomerDueAmount(quickViewCustomer.id || quickViewCustomer._id);
-            return result.dueAmount;
-          } catch (error) {
-            console.error('Error calculating due amount for quick view:', error);
-            return 0;
-          }
-        })()}
-        outstandingOrdersCount={(() => {
-          try {
-            if (!quickViewCustomer) return 0;
-            const result = calculateCustomerDueAmount(quickViewCustomer.id || quickViewCustomer._id);
-            return result.outstandingOrdersCount;
-          } catch (error) {
-            console.error('Error calculating orders for quick view:', error);
-            return 0;
-          }
-        })()}
+        dueAmount={quickViewCustomer?.balance || 0}
+        outstandingOrdersCount={0} // TODO: Add outstanding orders calculation when needed
       />
 
       {/* Create Customer Modal */}
       <Modal
-        title='Create New Customer'
+        title={
+          <div className="text-center">
+            <div className="text-2xl font-bold text-white mb-1">Create New Customer</div>
+            <div className="text-sm text-blue-100">Add customer details and optional advance payment</div>
+          </div>
+        }
         open={isModalOpen}
         onCancel={() => setIsModalOpen(false)}
         footer={null}
-        width='95%'
+        width={700}
         centered
-        className='mobile-optimized-modal'
+        className='customer-create-modal'
+        closeIcon={
+          <div className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all duration-200 group">
+            <svg 
+              className="w-4 h-4 text-white group-hover:scale-110 transition-transform duration-200" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={2} 
+                d="M6 18L18 6M6 6l12 12" 
+              />
+            </svg>
+          </div>
+        }
+        styles={{
+          body: { padding: '24px' },
+          header: { 
+            borderBottom: '1px solid #e5e7eb',
+            padding: '20px 24px'
+          }
+        }}
+        destroyOnClose
       >
         <Formik
           initialValues={initialValues}
           validationSchema={customerSchema}
           onSubmit={handleSubmit}
         >
-          {({ handleSubmit, isValid }) => (
+          {({ handleSubmit, isValid, values }) => (
             <Form>
-              <div className='space-y-4'>
-                <div>
-                  <label className='block text-base font-semibold mb-2 text-gray-800'>First Name *</label>
-                  <Field name='firstName' as={Input} placeholder='Enter first name' size='large' className='h-12 text-base rounded-xl' />
-                  <ErrorMessage
-                    name='firstName'
-                    component='div'
-                    className='mt-1 text-sm text-red-500 font-medium'
-                  />
+              <div className='space-y-6'>
+                {/* Basic Information Section */}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-100">
+                  <h3 className="text-lg font-semibold text-blue-800 mb-3 flex items-center">
+                    <UserOutlined className="mr-2" />
+                    Basic Information
+                  </h3>
+                  <div className='grid grid-cols-2 gap-4'>
+                    <div>
+                      <label className='block text-sm font-medium mb-2 text-gray-700'>First Name *</label>
+                      <Field 
+                        name='firstName' 
+                        as={Input} 
+                        placeholder='Enter first name' 
+                        size='large' 
+                        className='h-11 text-base rounded-lg border-gray-200 focus:border-blue-500 focus:ring-blue-500' 
+                      />
+                      <ErrorMessage
+                        name='firstName'
+                        component='div'
+                        className='mt-1 text-xs text-red-500'
+                      />
+                    </div>
+                    <div>
+                      <label className='block text-sm font-medium mb-2 text-gray-700'>Last Name *</label>
+                      <Field 
+                        name='lastName' 
+                        as={Input} 
+                        placeholder='Enter last name' 
+                        size='large' 
+                        className='h-11 text-base rounded-lg border-gray-200 focus:border-blue-500 focus:ring-blue-500' 
+                      />
+                      <ErrorMessage
+                        name='lastName'
+                        component='div'
+                        className='mt-1 text-xs text-red-500'
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                <div>
-                  <label className='block text-base font-semibold mb-2 text-gray-800'>Last Name *</label>
-                  <Field name='lastName' as={Input} placeholder='Enter last name' size='large' className='h-12 text-base rounded-xl' />
-                  <ErrorMessage
-                    name='lastName'
-                    component='div'
-                    className='mt-1 text-sm text-red-500 font-medium'
-                  />
+                {/* Contact Information Section */}
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-xl border border-green-100">
+                  <h3 className="text-lg font-semibold text-green-800 mb-3 flex items-center">
+                    <PhoneOutlined className="mr-2" />
+                    Contact Information
+                  </h3>
+                  <div className='grid grid-cols-2 gap-4'>
+                    <div>
+                      <label className='block text-sm font-medium mb-2 text-gray-700'>Phone Number *</label>
+                      <Field 
+                        name='phone' 
+                        as={Input} 
+                        placeholder='03086173320' 
+                        size='large'
+                        className='h-11 text-base rounded-lg border-gray-200 focus:border-green-500 focus:ring-green-500'
+                        prefix={<PhoneOutlined className='text-gray-400' />}
+                      />
+                      <ErrorMessage
+                        name='phone'
+                        component='div'
+                        className='mt-1 text-xs text-red-500'
+                      />
+                    </div>
+                    <div>
+                      <label className='block text-sm font-medium mb-2 text-gray-700'>Email</label>
+                      <Field 
+                        name='email' 
+                        as={Input} 
+                        placeholder='Enter email address' 
+                        size='large'
+                        className='h-11 text-base rounded-lg border-gray-200 focus:border-green-500 focus:ring-green-500'
+                        prefix={<MailOutlined className='text-gray-400' />}
+                      />
+                      <ErrorMessage
+                        name='email'
+                        component='div'
+                        className='mt-1 text-xs text-red-500'
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                <div>
-                  <label className='block text-base font-semibold mb-2 text-gray-800'>Phone Number *</label>
-                  <Field 
-                    name='phone' 
-                    as={Input} 
-                    placeholder='03086173320' 
-                    size='large'
-                    className='h-12 text-base rounded-xl'
-                    prefix={<PhoneOutlined className='text-base' />}
-                  />
-                  <ErrorMessage
-                    name='phone'
-                    component='div'
-                    className='mt-1 text-sm text-red-500 font-medium'
-                  />
+                {/* Address Section */}
+                <div className="bg-gradient-to-r from-purple-50 to-violet-50 p-4 rounded-xl border border-purple-100">
+                  <h3 className="text-lg font-semibold text-purple-800 mb-3 flex items-center">
+                    <EnvironmentOutlined className="mr-2" />
+                    Address Information
+                  </h3>
+                  <div className='space-y-3'>
+                    <Field 
+                      name='address.street' 
+                      as={Input} 
+                      placeholder='Enter street address' 
+                      size='large'
+                      className='h-11 text-base rounded-lg border-gray-200 focus:border-purple-500 focus:ring-purple-500'
+                      prefix={<EnvironmentOutlined className='text-gray-400' />}
+                    />
+                    <ErrorMessage
+                      name='address.street'
+                      component='div'
+                      className='mt-1 text-xs text-red-500'
+                    />
+                    
+                    <div className='grid grid-cols-2 gap-3'>
+                      <Field 
+                        name='address.city' 
+                        as={Input} 
+                        placeholder='City' 
+                        size='large'
+                        className='h-11 text-base rounded-lg border-gray-200 focus:border-purple-500 focus:ring-purple-500'
+                      />
+                      <Field 
+                        name='address.state' 
+                        as={Input} 
+                        placeholder='State/Province' 
+                        size='large'
+                        className='h-11 text-base rounded-lg border-gray-200 focus:border-purple-500 focus:ring-purple-500'
+                      />
+                    </div>
+                    <div className='grid grid-cols-2 gap-3'>
+                      <ErrorMessage
+                        name='address.city'
+                        component='div'
+                        className='mt-1 text-xs text-red-500'
+                      />
+                      <ErrorMessage
+                        name='address.state'
+                        component='div'
+                        className='mt-1 text-xs text-red-500'
+                      />
+                    </div>
+                    
+                    <Field 
+                      name='address.country' 
+                      as={Input} 
+                      placeholder='Country' 
+                      size='large'
+                      className='h-11 text-base rounded-lg border-gray-200 focus:border-purple-500 focus:ring-purple-500'
+                      defaultValue='Pakistan'
+                    />
+                    <ErrorMessage
+                      name='address.country'
+                      component='div'
+                      className='mt-1 text-xs text-red-500'
+                    />
+                  </div>
                 </div>
 
-                <div>
-                  <label className='block text-base font-semibold mb-2 text-gray-800'>Address *</label>
-                  <Field 
-                    name='address' 
-                    as={Input} 
-                    placeholder='Enter address' 
-                    size='large'
-                    className='h-12 text-base rounded-xl'
-                    prefix={<EnvironmentOutlined className='text-base' />}
-                  />
-                  <ErrorMessage
-                    name='address'
-                    component='div'
-                    className='mt-1 text-sm text-red-500 font-medium'
-                  />
-                </div>
-
-                <div>
-                  <label className='block text-base font-semibold mb-2 text-gray-800'>Email</label>
-                  <Field 
-                    name='email' 
-                    as={Input} 
-                    placeholder='Enter email address' 
-                    size='large'
-                    className='h-12 text-base rounded-xl'
-                    prefix={<MailOutlined className='text-base' />}
-                  />
-                  <ErrorMessage
-                    name='email'
-                    component='div'
-                    className='mt-1 text-sm text-red-500 font-medium'
-                  />
-                </div>
-
-                <div>
-                  <label className='block text-base font-semibold mb-2 text-gray-800'>Credit Limit</label>
-                  <Field 
-                    name='creditLimit' 
-                    as={Input} 
-                    type='number'
-                    placeholder='Enter credit limit' 
-                    size='large'
-                    className='h-12 text-base rounded-xl'
-                    prefix={<DollarOutlined className='text-base' />}
-                  />
-                  <ErrorMessage
-                    name='creditLimit'
-                    component='div'
-                    className='mt-1 text-sm text-red-500 font-medium'
-                  />
-                </div>
-
-                <Divider className='my-4' />
-
-                <div>
-                  <label className='block text-base font-semibold mb-2 text-gray-800'>Advance Payment</label>
+                {/* Advance Payment Section */}
+                <div className="bg-gradient-to-r from-orange-50 to-amber-50 p-4 rounded-xl border border-orange-100">
+                  <h3 className="text-lg font-semibold text-orange-800 mb-3 flex items-center">
+                    <DollarOutlined className="mr-2" />
+                    Advance Payment
+                  </h3>
                   <div className='flex items-center space-x-3 mb-4'>
                     <Field name='hasAdvance'>
                       {({ field, form }: any) => (
                         <Switch
                           checked={field.value}
                           onChange={(checked) => form.setFieldValue('hasAdvance', checked)}
-                          className='bg-primary'
+                          className='bg-orange-500'
                         />
                       )}
                     </Field>
-                    <span className='text-gray-600'>Customer wants to pay advance</span>
+                    <span className='text-gray-600 text-sm'>Customer wants to pay advance</span>
                   </div>
 
                   <Field name='hasAdvance'>
                     {({ field }: any) => field.value && (
-                      <div className='space-y-4 p-4 bg-gray-50 rounded-lg border'>
-                        <div>
-                          <label className='block text-sm font-medium mb-2 text-gray-700'>Advance Amount *</label>
-                          <Field 
-                            name='advance.amount' 
-                            as={Input} 
-                            type='number'
-                            placeholder='Enter advance amount' 
-                            size='large'
-                            className='h-12 text-base rounded-xl'
-                            prefix={<DollarOutlined className='text-base' />}
-                          />
+                      <div className='space-y-3 p-4 bg-white rounded-lg border border-orange-200'>
+                        <div className='grid grid-cols-2 gap-3'>
+                          <div>
+                            <label className='block text-sm font-medium mb-2 text-gray-700'>Amount *</label>
+                            <Field 
+                              name='advance.amount' 
+                              as={Input} 
+                              type='number'
+                              placeholder='Enter amount' 
+                              size='large'
+                              className='h-11 text-base rounded-lg border-gray-200 focus:border-orange-500 focus:ring-orange-500'
+                              prefix={<DollarOutlined className='text-gray-400' />}
+                            />
+                          </div>
+                          <div>
+                            <label className='block text-sm font-medium mb-2 text-gray-700'>Method *</label>
+                            <Field name='advance.method'>
+                              {({ field, form }: any) => (
+                                <Select
+                                  value={field.value}
+                                  onChange={(value) => form.setFieldValue('advance.method', value)}
+                                  placeholder='Select method'
+                                  size='large'
+                                  className='w-full'
+                                  options={[
+                                    { value: 'cash', label: 'Cash' },
+                                    { value: 'bank', label: 'Bank Transfer' },
+                                    { value: 'jazzcash', label: 'JazzCash' },
+                                    { value: 'card', label: 'Card' },
+                                    { value: 'other', label: 'Other' },
+                                  ]}
+                                />
+                              )}
+                            </Field>
+                          </div>
                         </div>
-
-                        <div>
-                          <label className='block text-sm font-medium mb-2 text-gray-700'>Payment Method *</label>
-                          <Field name='advance.method'>
-                            {({ field, form }: any) => (
-                              <Select
-                                value={field.value}
-                                onChange={(value) => form.setFieldValue('advance.method', value)}
-                                placeholder='Select payment method'
-                                size='large'
-                                className='w-full'
-                                options={[
-                                  { value: 'cash', label: 'Cash' },
-                                  { value: 'bank', label: 'Bank Transfer' },
-                                  { value: 'jazzcash', label: 'JazzCash' },
-                                  { value: 'card', label: 'Card' },
-                                  { value: 'other', label: 'Other' },
-                                ]}
-                              />
-                            )}
-                          </Field>
+                        
+                        <div className='grid grid-cols-2 gap-3'>
+                          <div>
+                            <label className='block text-sm font-medium mb-2 text-gray-700'>Reference</label>
+                            <Field 
+                              name='advance.reference' 
+                              as={Input} 
+                              placeholder='Payment reference' 
+                              size='large'
+                              className='h-11 text-base rounded-lg border-gray-200 focus:border-orange-500 focus:ring-orange-500'
+                            />
+                          </div>
+                          <div>
+                            <label className='block text-sm font-medium mb-2 text-gray-700'>Date</label>
+                            <Field name='advance.date'>
+                              {({ field, form }: any) => (
+                                <DatePicker
+                                  value={field.value ? dayjs(field.value) : null}
+                                  onChange={(date) => form.setFieldValue('advance.date', date ? date.format('YYYY-MM-DDTHH:mm:ssZ') : '')}
+                                  size='large'
+                                  className='w-full'
+                                  format='YYYY-MM-DD'
+                                />
+                              )}
+                            </Field>
+                          </div>
                         </div>
-
-                        <div>
-                          <label className='block text-sm font-medium mb-2 text-gray-700'>Reference *</label>
-                          <Field 
-                            name='advance.reference' 
-                            as={Input} 
-                            placeholder='Enter reference number' 
-                            size='large'
-                            className='h-12 text-base rounded-xl'
-                          />
-                        </div>
-
-                        <div>
-                          <label className='block text-sm font-medium mb-2 text-gray-700'>Date *</label>
-                          <Field name='advance.date'>
-                            {({ field, form }: any) => (
-                              <DatePicker
-                                value={field.value ? dayjs(field.value) : null}
-                                onChange={(date) => form.setFieldValue('advance.date', date ? date.format('YYYY-MM-DDTHH:mm:ssZ') : '')}
-                                size='large'
-                                className='w-full h-12 rounded-xl'
-                                format='YYYY-MM-DD HH:mm'
-                                showTime={{ format: 'HH:mm' }}
-                              />
-                            )}
-                          </Field>
-                        </div>
-
+                        
                         <div>
                           <label className='block text-sm font-medium mb-2 text-gray-700'>Note</label>
                           <Field 
                             name='advance.note' 
                             as={Input.TextArea} 
-                            placeholder='Enter note (optional)' 
-                            rows={3}
-                            className='rounded-xl'
+                            placeholder='Additional notes' 
+                            rows={2}
+                            className='rounded-lg border-gray-200 focus:border-orange-500 focus:ring-orange-500'
                           />
                         </div>
                       </div>
@@ -644,22 +644,21 @@ const CustomerManagement = () => {
                   </Field>
                 </div>
 
-                <Divider className='my-4' />
-
-                <div className='flex gap-3'>
+                {/* Action Buttons */}
+                <div className='flex items-center justify-end gap-3 pt-4 border-t border-gray-200'>
                   <Button 
-                    onClick={() => setIsModalOpen(false)} 
+                    onClick={() => setIsModalOpen(false)}
                     size='large'
-                    className='flex-1 h-12 text-base font-semibold rounded-xl border-2 border-gray-300'
+                    className='h-11 px-6 rounded-lg border-gray-300 text-gray-700 hover:border-gray-400'
                   >
                     Cancel
                   </Button>
                   <Button 
                     type='primary' 
-                    onClick={() => handleSubmit()} 
-                    disabled={isLoading || !isValid}
                     size='large'
-                    className='flex-1 h-12 text-base font-semibold bg-primary hover:bg-primaryDark rounded-xl shadow-md'
+                    loading={isLoading}
+                    disabled={!isValid}
+                    className='h-11 px-8 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-200'
                   >
                     {isLoading ? 'Creating...' : 'Create Customer'}
                   </Button>

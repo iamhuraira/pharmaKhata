@@ -14,17 +14,26 @@ const AddressSchema = new Schema({
 
   city: {
     type: String,
-    required: true,
+    required: false,
+    default: '',
   },
 
   state: {
     type: String,
-    required: true,
+    required: false,
+    default: '',
+  },
+
+  zip: {
+    type: String,
+    required: false,
+    default: '',
   },
 
   country: {
     type: String,
-    required: true,
+    required: false,
+    default: 'Pakistan',
   },
 });
 
@@ -105,6 +114,13 @@ const userSchema = new Schema(
     TFAOTP: {
       type: String,
       default: null,
+    },
+
+    // Customer balance field
+    balance: {
+      type: Number,
+      default: 0,
+      required: false,
     },
   },
   {

@@ -28,3 +28,120 @@ body {
 #sentry-spotlight-root {
   display: none !important;
 }
+
+/* Customer Create Modal Styles */
+.customer-create-modal .ant-modal-content {
+  border-radius: 16px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.customer-create-modal.ant-modal-close .ant-modal-content {
+  animation: modalSlideOut 0.2s ease-in;
+}
+
+@keyframes modalSlideOut {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+}
+
+.customer-create-modal .ant-modal-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-bottom: none;
+}
+
+.customer-create-modal .ant-modal-title {
+  color: white !important;
+}
+
+.customer-create-modal .ant-modal-close {
+  color: white;
+  top: 20px;
+  right: 20px;
+}
+
+.customer-create-modal .ant-modal-close:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+}
+
+/* Modal backdrop styling */
+.customer-create-modal + .ant-modal-mask {
+  background-color: rgba(0, 0, 0, 0.6) !important;
+  backdrop-filter: blur(4px);
+}
+
+/* Ensure modal is above backdrop */
+.customer-create-modal {
+  z-index: 1001;
+}
+
+/* Custom close button styling */
+.customer-create-modal .ant-modal-close .anticon {
+  display: none;
+}
+
+.customer-create-modal .ant-modal-close {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.3s ease !important;
+}
+
+.customer-create-modal .ant-modal-close:hover {
+  transform: scale(1.1) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Form field focus effects */
+.customer-create-modal .ant-input:focus,
+.customer-create-modal .ant-input-focused {
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
+.customer-create-modal .ant-select-focused .ant-select-selector {
+  border-color: #667eea !important;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2) !important;
+}
+
+/* Section card hover effects */
+.customer-create-modal .bg-gradient-to-r {
+  transition: all 0.3s ease;
+}
+
+.customer-create-modal .bg-gradient-to-r:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Button hover effects */
+.customer-create-modal .ant-btn-primary {
+  transition: all 0.3s ease;
+}
+
+.customer-create-modal .ant-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+}

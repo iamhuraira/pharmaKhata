@@ -4,7 +4,7 @@ import { User } from '@/lib/models/user';
 import { Role } from '@/lib/models/roles';
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -13,9 +13,9 @@ export async function GET(
     // Ensure all models are registered
     User && Role;
     
-    const { id: customerId } = await params;
-    
-    // Validate customer exists
+    const { id } = await params;
+
+    // Get customer role
     const customerRole = await Role.findOne({ name: 'customer' });
     if (!customerRole) {
       return NextResponse.json({
@@ -24,11 +24,12 @@ export async function GET(
       }, { status: 404 });
     }
 
+    // Find customer by ID and role
     const customer = await User.findOne({ 
-      _id: customerId, 
+      _id: id, 
       role: customerRole._id 
-    }).select('-password');
-    
+    }).select('firstName lastName phone email status role balance createdAt updatedAt currentAddress');
+
     if (!customer) {
       return NextResponse.json({
         success: false,
@@ -36,30 +37,42 @@ export async function GET(
       }, { status: 404 });
     }
 
-    // Map customer to expected format
-    const mappedCustomer = {
-      id: customer._id,
-      firstName: customer.firstName,
-      lastName: customer.lastName,
-      phone: customer.phone,
-      email: '', // Default value since it's not in User model
-      address: {}, // Default empty address
-      balance: 0, // Will be calculated from transactions
-      creditLimit: 0, // Default value
-      status: customer.status,
-      createdAt: customer.createdAt,
-      updatedAt: customer.updatedAt
-    };
+    // Handle address field - convert from AddressSchema to string or object
+    let addressValue = '';
+    const currentAddress = (customer as any).currentAddress;
+    if (currentAddress) {
+      if (typeof currentAddress === 'string') {
+        addressValue = currentAddress;
+      } else if (currentAddress.street) {
+        const parts = [currentAddress.street, currentAddress.city, currentAddress.state];
+        if (currentAddress.country && currentAddress.country !== 'Pakistan') {
+          parts.push(currentAddress.country);
+        }
+        addressValue = parts.join(', ');
+      }
+    }
 
     return NextResponse.json({
       success: true,
       data: {
-        customer: mappedCustomer
+        customer: {
+          id: customer._id,
+          firstName: customer.firstName,
+          lastName: customer.lastName,
+          phone: customer.phone,
+          email: customer.email || '',
+          status: customer.status,
+          role: customer.role,
+          balance: customer.balance || 0,
+          address: addressValue,
+          createdAt: customer.createdAt,
+          updatedAt: customer.updatedAt
+        }
       }
     });
 
   } catch (error) {
-    console.error('Get customer error:', error);
+    console.error('Get customer by ID error:', error);
     return NextResponse.json({
       success: false,
       message: 'Internal server error'

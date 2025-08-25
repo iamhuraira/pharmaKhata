@@ -126,16 +126,20 @@ export function CustomerQuickView({
           <Row gutter={16}>
             <Col span={12}>
               <Statistic
-                title="Due Amount"
-                value={dueAmount}
+                title="Current Balance"
+                value={Math.abs(customer.balance || 0)}
                 precision={2}
                 valueStyle={{ 
-                  color: dueAmount > 0 ? '#dc2626' : '#16a34a',
+                  color: (customer.balance || 0) >= 0 ? '#16a34a' : '#dc2626',
                   fontSize: '18px'
                 }}
                 suffix="PKR"
-                prefix={<DollarOutlined />}
+                prefix={(customer.balance || 0) < 0 ? "-" : ""}
               />
+              <div className="text-xs text-gray-500 mt-1 text-center">
+                {(customer.balance || 0) > 0 ? 'Advance Credit' : 
+                 (customer.balance || 0) < 0 ? 'Amount Due' : 'Settled'}
+              </div>
             </Col>
             <Col span={12}>
               <Statistic

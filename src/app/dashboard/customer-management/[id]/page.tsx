@@ -151,8 +151,8 @@ const CustomerDetailPage = () => {
   const totalAdvances = summary?.totalAdvances || 0;
   const totalAdvanceAllocations = summary?.totalAdvanceAllocations || 0;
   
-  // Calculate outstanding amount from transactions (more accurate)
-  const outstandingAmount = summary?.outstandingAmount || 0;
+  // Get current balance directly from customer object (new approach)
+  const currentBalance = customer.balance || 0;
   
   // Debug logging for summary data
   console.log(`🔍 Customer ${customerId} - Summary:`, summary);
@@ -160,6 +160,7 @@ const CustomerDetailPage = () => {
   console.log(`🔍 Customer ${customerId} - Total Payments:`, totalPayments);
   console.log(`🔍 Customer ${customerId} - Total Advances:`, totalAdvances);
   console.log(`🔍 Customer ${customerId} - Total Advance Allocations:`, totalAdvanceAllocations);
+  console.log(`🔍 Customer ${customerId} - Current Balance from DB:`, currentBalance);
   
   // Filter orders for this customer
   const customerOrders = allOrders.filter((order: any) => {
@@ -193,12 +194,16 @@ const CustomerDetailPage = () => {
     console.log(`🔍 Fallback Total Payments calculated from orders:`, totalPayments);
   }
   
-  // Use the more accurate outstanding amount from transactions
-  const totalOutstandingAmount = outstandingAmount > 0 ? outstandingAmount : 0;
+  // Calculate outstanding amount from orders (more accurate for current state)
+  const totalOutstandingAmount = outstandingOrders.reduce((sum: number, order: any) => {
+    const balance = order.totals?.balance || 0;
+    return sum + balance;
+  }, 0);
   
-  // Calculate current balance - if customer owes money, show negative balance
+  // Use the balance from database for current balance display
+  // If customer owes money, show negative balance
   // If they have advance, show positive balance
-  const currentBalance = totalOutstandingAmount > 0 ? -totalOutstandingAmount : (customer.balance || 0);
+  const displayBalance = currentBalance;
 
   return (
     <div className="px-2 py-4">
@@ -264,15 +269,15 @@ const CustomerDetailPage = () => {
             <Card className="text-center" bodyStyle={{ padding: '16px 12px' }}>
             <Statistic
               title="Current Balance"
-              value={Math.abs(currentBalance)}
+              value={Math.abs(displayBalance)}
               precision={2}
               valueStyle={{ 
-                color: currentBalance >= 0 ? '#3f8600' : '#cf1322',
+                color: displayBalance >= 0 ? '#3f8600' : '#cf1322',
                 fontSize: '24px',
                 fontWeight: 'bold'
               }}
               suffix="PKR"
-              prefix={currentBalance < 0 ? "-" : ""}
+              prefix={displayBalance < 0 ? "-" : ""}
             />
           </Card>
         </Col>
@@ -342,7 +347,7 @@ const CustomerDetailPage = () => {
                 suffix="PKR"
               />
               <Text type="secondary" className="text-sm">
-                {currentBalance < 0 ? 'After advance allocation' : 'Net amount owed'}
+                {displayBalance < 0 ? 'After advance allocation' : 'Net amount owed'}
               </Text>
             </Card>
           </Col>
@@ -366,17 +371,17 @@ const CustomerDetailPage = () => {
                        {outstandingOrders.length > 0 && (
                          <div>• {outstandingOrders.length} order(s) have outstanding balance</div>
                        )}
-                       {currentBalance < 0 && (
-                         <div>• Advance of {Math.abs(currentBalance).toLocaleString()} PKR already applied</div>
+                       {displayBalance < 0 && (
+                         <div>• Advance of {Math.abs(displayBalance).toLocaleString()} PKR already applied</div>
                        )}
                      </div>
                    </>
-                 ) : currentBalance < 0 ? (
+                 ) : displayBalance < 0 ? (
                    <>
                      <div className="flex items-center space-x-2">
                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                        <Text strong className="text-green-600 text-xl">
-                         Customer has advance: {Math.abs(currentBalance).toLocaleString()} PKR
+                         Customer has advance: {Math.abs(displayBalance).toLocaleString()} PKR
                        </Text>
                      </div>
                      <div className="text-sm text-gray-600 ml-5">
@@ -422,13 +427,13 @@ const CustomerDetailPage = () => {
               <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-200">
                 <Text strong className="text-blue-600 text-lg">Net Position</Text>
                 <div className="mt-2">
-                  {currentBalance < 0 ? (
+                  {displayBalance < 0 ? (
                     <Text strong className="text-red-600 text-2xl">
-                      -{Math.abs(currentBalance).toLocaleString()} PKR
+                      -{Math.abs(displayBalance).toLocaleString()} PKR
                     </Text>
-                  ) : currentBalance > 0 ? (
+                  ) : displayBalance > 0 ? (
                     <Text strong className="text-green-600 text-2xl">
-                      +{currentBalance.toLocaleString()} PKR
+                      +{displayBalance.toLocaleString()} PKR
                     </Text>
                   ) : (
                     <Text strong className="text-gray-600 text-2xl">
@@ -437,8 +442,8 @@ const CustomerDetailPage = () => {
                   )}
                 </div>
                 <Text type="secondary" className="text-sm">
-                  {currentBalance < 0 ? 'Customer owes this amount' : 
-                   currentBalance > 0 ? 'Customer has advance credit' : 
+                  {displayBalance < 0 ? 'Customer owes this amount' : 
+                   displayBalance > 0 ? 'Customer has advance credit' : 
                    'Account is balanced'}
                 </Text>
               </div>

@@ -3,6 +3,7 @@ import { connectDB } from '@/lib/db';
 import { User } from '@/lib/models/user';
 import { Role } from '@/lib/models/roles';
 import { LedgerTransaction } from '@/lib/models/ledger';
+import { updateCustomerBalance, getCustomerBalanceFromDB } from '@/lib/utils/customerBalance';
 
 export async function POST(
   request: NextRequest,
@@ -14,7 +15,7 @@ export async function POST(
     // Ensure all models are registered
     User && Role && LedgerTransaction;
     
-    const { id: customerId } = await params;
+    const { id } = await params;
     const body = await request.json();
     
     const {
@@ -40,13 +41,6 @@ export async function POST(
       }, { status: 400 });
     }
 
-    if (!reference) {
-      return NextResponse.json({
-        success: false,
-        message: 'Reference is required'
-      }, { status: 400 });
-    }
-
     // Validate customer exists
     const customerRole = await Role.findOne({ name: 'customer' });
     if (!customerRole) {
@@ -57,7 +51,7 @@ export async function POST(
     }
 
     const customer = await User.findOne({ 
-      _id: customerId, 
+      _id: id, 
       role: customerRole._id 
     });
     
@@ -68,7 +62,10 @@ export async function POST(
       }, { status: 404 });
     }
 
-    // Get last transaction for running balance calculation
+    // Get current customer balance from database
+    const currentCustomerBalance = await getCustomerBalanceFromDB(id);
+
+    // Get last ledger transaction for running balance
     const lastTransaction = await (LedgerTransaction as any).findOne()
       .sort({ date: -1, createdAt: -1 })
       .lean();
@@ -77,19 +74,15 @@ export async function POST(
     const runningBalance = lastBalance + amount; // Payment increases cash balance
 
     // Determine if this is an advance payment or debt payment
-    const currentBalance = (customer as any).balance || 0;
-    let newBalance: number;
     let transactionType: string;
     let description: string;
 
-    if (currentBalance <= 0) {
+    if (currentCustomerBalance <= 0) {
       // Customer owes money - this payment reduces debt
-      newBalance = currentBalance - amount;
       transactionType = 'payment';
       description = `Payment from ${customer.firstName} ${customer.lastName} - ${note || 'Debt payment'}`;
     } else {
       // Customer has advance credit - this payment increases advance
-      newBalance = currentBalance + amount;
       transactionType = 'advance';
       description = `Advance payment from ${customer.firstName} ${customer.lastName} - ${note || 'Advance payment'}`;
     }
@@ -101,7 +94,7 @@ export async function POST(
       method: method,
       description: description,
       ref: {
-        customerId: customerId,
+        customerId: id,
         party: `${customer.firstName} ${customer.lastName}`,
         txnNo: reference,
         note: note
@@ -113,14 +106,11 @@ export async function POST(
 
     await ledgerTransaction.save();
 
-    // Update customer balance
-    await User.findByIdAndUpdate(customerId, {
-      balance: newBalance
-    });
+    // Update customer balance directly
+    const newBalance = await updateCustomerBalance(id, amount, transactionType);
 
     return NextResponse.json({
       success: true,
-
       message: transactionType === 'advance' ? 'Advance payment recorded successfully' : 'Payment recorded successfully',
       data: {
         payment: {
@@ -140,8 +130,7 @@ export async function POST(
     console.error('Error recording payment:', error);
     return NextResponse.json({
       success: false,
-      message: 'Failed to record payment',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      message: 'Internal server error'
     }, { status: 500 });
   }
 }

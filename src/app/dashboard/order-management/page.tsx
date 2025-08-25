@@ -167,12 +167,10 @@ const OrderManagementPage = () => {
       title: 'Total',
       key: 'total',
       render: (record: any) => {
-        const orderItems = record.items?.map((item: any) => ({
-          total: item.qty * item.price
-        })) || [];
-        const subtotal = orderItems.reduce((sum: number, item: any) => sum + item.total, 0);
-        const discount = record.payment?.discount || 0;
-        const grandTotal = subtotal - discount;
+        // Use the totals from the order if available, otherwise calculate
+        const grandTotal = record.totals?.grandTotal || 
+          record.items?.reduce((sum: number, item: any) => sum + (item.qty * item.price), 0) || 0;
+        const discount = record.totals?.discountTotal || record.payment?.discount || 0;
         
         return (
           <div>
@@ -202,20 +200,24 @@ const OrderManagementPage = () => {
       title: 'Payment',
       key: 'payment',
       render: (record: any) => {
-        const orderItems = record.items?.map((item: any) => ({
-          total: item.qty * item.price
-        })) || [];
-        const subtotal = orderItems.reduce((sum: number, item: any) => sum + item.total, 0);
-        const discount = record.payment?.discount || 0;
-        const grandTotal = subtotal - discount;
-        const amountReceived = record.payment?.amountReceived || 0;
-        const balanceDue = grandTotal - amountReceived;
+        // Use the totals from the order if available, otherwise calculate
+        const grandTotal = record.totals?.grandTotal || 
+          record.items?.reduce((sum: number, item: any) => sum + (item.qty * item.price), 0) || 0;
+        
+        const amountReceived = record.totals?.amountReceived || record.payment?.amountReceived || 0;
+        const advanceUsed = record.totals?.advanceUsed || 0;
+        const balanceDue = record.totals?.balance || (grandTotal - amountReceived - advanceUsed);
 
         return (
           <div>
             <div className="font-medium">
               PKR {amountReceived.toLocaleString()}
             </div>
+            {advanceUsed > 0 && (
+              <div className="text-sm text-blue-600">
+                Advance: PKR {advanceUsed.toLocaleString()}
+              </div>
+            )}
             {balanceDue > 0 ? (
               <div className="text-sm text-red-600">
                 Due: PKR {balanceDue.toLocaleString()}
@@ -239,14 +241,13 @@ const OrderManagementPage = () => {
       title: 'Actions',
       key: 'actions',
       render: (record: any) => {
-        const orderItems = record.items?.map((item: any) => ({
-          total: item.qty * item.price
-        })) || [];
-        const subtotal = orderItems.reduce((sum: number, item: any) => sum + item.total, 0);
-        const discount = record.payment?.discount || 0;
-        const grandTotal = subtotal - discount;
-        const amountReceived = record.payment?.amountReceived || 0;
-        const balanceDue = grandTotal - amountReceived;
+        // Use the totals from the order if available, otherwise calculate
+        const grandTotal = record.totals?.grandTotal || 
+          record.items?.reduce((sum: number, item: any) => sum + (item.qty * item.price), 0) || 0;
+        
+        const amountReceived = record.totals?.amountReceived || record.payment?.amountReceived || 0;
+        const advanceUsed = record.totals?.advanceUsed || 0;
+        const balanceDue = record.totals?.balance || (grandTotal - amountReceived - advanceUsed);
 
         return (
           <Space>
