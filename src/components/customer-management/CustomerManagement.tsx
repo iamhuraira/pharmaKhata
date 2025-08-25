@@ -380,7 +380,9 @@ const CustomerManagement = () => {
           </div>
         }
         styles={{
-          body: { padding: '24px' },
+          body: { 
+            padding: '24px'
+          },
           header: { 
             borderBottom: '1px solid #e5e7eb',
             padding: '20px 24px'
@@ -395,257 +397,258 @@ const CustomerManagement = () => {
         >
           {({ handleSubmit, isValid, values }) => (
             <Form>
-              <div className='space-y-6'>
-                {/* Basic Information Section */}
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-100">
-                  <h3 className="text-lg font-semibold text-blue-800 mb-3 flex items-center">
-                    <UserOutlined className="mr-2" />
-                    Basic Information
-                  </h3>
-                  <div className='grid grid-cols-2 gap-4'>
-                    <div>
-                      <label className='block text-sm font-medium mb-2 text-gray-700'>First Name *</label>
-                      <Field 
-                        name='firstName' 
-                        as={Input} 
-                        placeholder='Enter first name' 
-                        size='large' 
-                        className='h-11 text-base rounded-lg border-gray-200 focus:border-blue-500 focus:ring-blue-500' 
-                      />
-                      <ErrorMessage
-                        name='firstName'
-                        component='div'
-                        className='mt-1 text-xs text-red-500'
-                      />
-                    </div>
-                    <div>
-                      <label className='block text-sm font-medium mb-2 text-gray-700'>Last Name *</label>
-                      <Field 
-                        name='lastName' 
-                        as={Input} 
-                        placeholder='Enter last name' 
-                        size='large' 
-                        className='h-11 text-base rounded-lg border-gray-200 focus:border-blue-500 focus:ring-blue-500' 
-                      />
-                      <ErrorMessage
-                        name='lastName'
-                        component='div'
-                        className='mt-1 text-xs text-red-500'
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Contact Information Section */}
-                <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-xl border border-green-100">
-                  <h3 className="text-lg font-semibold text-green-800 mb-3 flex items-center">
-                    <PhoneOutlined className="mr-2" />
-                    Contact Information
-                  </h3>
-                  <div className='grid grid-cols-2 gap-4'>
-                    <div>
-                      <label className='block text-sm font-medium mb-2 text-gray-700'>Phone Number *</label>
-                      <Field 
-                        name='phone' 
-                        as={Input} 
-                        placeholder='03086173320' 
-                        size='large'
-                        className='h-11 text-base rounded-lg border-gray-200 focus:border-green-500 focus:ring-green-500'
-                        prefix={<PhoneOutlined className='text-gray-400' />}
-                      />
-                      <ErrorMessage
-                        name='phone'
-                        component='div'
-                        className='mt-1 text-xs text-red-500'
-                      />
-                    </div>
-                    <div>
-                      <label className='block text-sm font-medium mb-2 text-gray-700'>Email</label>
-                      <Field 
-                        name='email' 
-                        as={Input} 
-                        placeholder='Enter email address' 
-                        size='large'
-                        className='h-11 text-base rounded-lg border-gray-200 focus:border-green-500 focus:ring-green-500'
-                        prefix={<MailOutlined className='text-gray-400' />}
-                      />
-                      <ErrorMessage
-                        name='email'
-                        component='div'
-                        className='mt-1 text-xs text-red-500'
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Address Section */}
-                <div className="bg-gradient-to-r from-purple-50 to-violet-50 p-4 rounded-xl border border-purple-100">
-                  <h3 className="text-lg font-semibold text-purple-800 mb-3 flex items-center">
-                    <EnvironmentOutlined className="mr-2" />
-                    Address Information
-                  </h3>
-                  <div className='space-y-3'>
-                    <Field 
-                      name='address.street' 
-                      as={Input} 
-                      placeholder='Enter street address' 
-                      size='large'
-                      className='h-11 text-base rounded-lg border-gray-200 focus:border-purple-500 focus:ring-purple-500'
-                      prefix={<EnvironmentOutlined className='text-gray-400' />}
-                    />
-                    <ErrorMessage
-                      name='address.street'
-                      component='div'
-                      className='mt-1 text-xs text-red-500'
-                    />
-                    
-                    <div className='grid grid-cols-2 gap-3'>
-                      <Field 
-                        name='address.city' 
-                        as={Input} 
-                        placeholder='City' 
-                        size='large'
-                        className='h-11 text-base rounded-lg border-gray-200 focus:border-purple-500 focus:ring-purple-500'
-                      />
-                      <Field 
-                        name='address.state' 
-                        as={Input} 
-                        placeholder='State/Province' 
-                        size='large'
-                        className='h-11 text-base rounded-lg border-gray-200 focus:border-purple-500 focus:ring-purple-500'
-                      />
-                    </div>
-                    <div className='grid grid-cols-2 gap-3'>
-                      <ErrorMessage
-                        name='address.city'
-                        component='div'
-                        className='mt-1 text-xs text-red-500'
-                      />
-                      <ErrorMessage
-                        name='address.state'
-                        component='div'
-                        className='mt-1 text-xs text-red-500'
-                      />
-                    </div>
-                    
-                    <Field 
-                      name='address.country' 
-                      as={Input} 
-                      placeholder='Country' 
-                      size='large'
-                      className='h-11 text-base rounded-lg border-gray-200 focus:border-purple-500 focus:ring-purple-500'
-                      defaultValue='Pakistan'
-                    />
-                    <ErrorMessage
-                      name='address.country'
-                      component='div'
-                      className='mt-1 text-xs text-red-500'
-                    />
-                  </div>
-                </div>
-
-                {/* Advance Payment Section */}
-                <div className="bg-gradient-to-r from-orange-50 to-amber-50 p-4 rounded-xl border border-orange-100">
-                  <h3 className="text-lg font-semibold text-orange-800 mb-3 flex items-center">
-                    <DollarOutlined className="mr-2" />
-                    Advance Payment
-                  </h3>
-                  <div className='flex items-center space-x-3 mb-4'>
-                    <Field name='hasAdvance'>
-                      {({ field, form }: any) => (
-                        <Switch
-                          checked={field.value}
-                          onChange={(checked) => form.setFieldValue('hasAdvance', checked)}
-                          className='bg-orange-500'
+              <div className='h-full flex flex-col'>
+                <div className='cm-scroll flex-1 pr-1 space-y-6' style={{ maxHeight: '70vh' }}>
+                  {/* Basic Information Section */}
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-100">
+                    <h3 className="text-lg font-semibold text-blue-800 mb-3 flex items-center">
+                      <UserOutlined className="mr-2" />
+                      Basic Information
+                    </h3>
+                    <div className='grid grid-cols-2 gap-4'>
+                      <div>
+                        <label className='block text-sm font-medium mb-2 text-gray-700'>First Name *</label>
+                        <Field 
+                          name='firstName' 
+                          as={Input} 
+                          placeholder='Enter first name' 
+                          size='large' 
+                          className='h-11 text-base rounded-lg border-gray-200 focus:border-blue-500 focus:ring-blue-500' 
                         />
+                        <ErrorMessage
+                          name='firstName'
+                          component='div'
+                          className='mt-1 text-xs text-red-500'
+                        />
+                      </div>
+                      <div>
+                        <label className='block text-sm font-medium mb-2 text-gray-700'>Last Name *</label>
+                        <Field 
+                          name='lastName' 
+                          as={Input} 
+                          placeholder='Enter last name' 
+                          size='large' 
+                          className='h-11 text-base rounded-lg border-gray-200 focus:border-blue-500 focus:ring-blue-500' 
+                        />
+                        <ErrorMessage
+                          name='lastName'
+                          component='div'
+                          className='mt-1 text-xs text-red-500'
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Contact Information Section */}
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-xl border border-green-100">
+                    <h3 className="text-lg font-semibold text-green-800 mb-3 flex items-center">
+                      <PhoneOutlined className="mr-2" />
+                      Contact Information
+                    </h3>
+                    <div className='grid grid-cols-2 gap-4'>
+                      <div>
+                        <label className='block text-sm font-medium mb-2 text-gray-700'>Phone Number *</label>
+                        <Field 
+                          name='phone' 
+                          as={Input} 
+                          placeholder='03086173320' 
+                          size='large'
+                          className='h-11 text-base rounded-lg border-gray-200 focus:border-green-500 focus:ring-green-500'
+                          prefix={<PhoneOutlined className='text-gray-400' />}
+                        />
+                        <ErrorMessage
+                          name='phone'
+                          component='div'
+                          className='mt-1 text-xs text-red-500'
+                        />
+                      </div>
+                      <div>
+                        <label className='block text-sm font-medium mb-2 text-gray-700'>Email</label>
+                        <Field 
+                          name='email' 
+                          as={Input} 
+                          placeholder='Enter email address' 
+                          size='large'
+                          className='h-11 text-base rounded-lg border-gray-200 focus:border-green-500 focus:ring-green-500'
+                          prefix={<MailOutlined className='text-gray-400' />}
+                        />
+                        <ErrorMessage
+                          name='email'
+                          component='div'
+                          className='mt-1 text-xs text-red-500'
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Address Section */}
+                  <div className="bg-gradient-to-r from-purple-50 to-violet-50 p-4 rounded-xl border border-purple-100">
+                    <h3 className="text-lg font-semibold text-purple-800 mb-3 flex items-center">
+                      <EnvironmentOutlined className="mr-2" />
+                      Address Information
+                    </h3>
+                    <div className='space-y-3'>
+                      <Field 
+                        name='address.street' 
+                        as={Input} 
+                        placeholder='Enter street address' 
+                        size='large'
+                        className='h-11 text-base rounded-lg border-gray-200 focus:border-purple-500 focus:ring-purple-500'
+                        prefix={<EnvironmentOutlined className='text-gray-400' />}
+                      />
+                      <ErrorMessage
+                        name='address.street'
+                        component='div'
+                        className='mt-1 text-xs text-red-500'
+                      />
+                      
+                      <div className='grid grid-cols-2 gap-3'>
+                        <Field 
+                          name='address.city' 
+                          as={Input} 
+                          placeholder='City' 
+                          size='large'
+                          className='h-11 text-base rounded-lg border-gray-200 focus:border-purple-500 focus:ring-purple-500'
+                        />
+                        <Field 
+                          name='address.state' 
+                          as={Input} 
+                          placeholder='State/Province' 
+                          size='large'
+                          className='h-11 text-base rounded-lg border-gray-200 focus:border-purple-500 focus:ring-purple-500'
+                        />
+                      </div>
+                      <div className='grid grid-cols-2 gap-3'>
+                        <ErrorMessage
+                          name='address.city'
+                          component='div'
+                          className='mt-1 text-xs text-red-500'
+                        />
+                        <ErrorMessage
+                          name='address.state'
+                          component='div'
+                          className='mt-1 text-xs text-red-500'
+                        />
+                      </div>
+                      
+                      <Field 
+                        name='address.country' 
+                        as={Input} 
+                        placeholder='Country' 
+                        size='large'
+                        className='h-11 text-base rounded-lg border-gray-200 focus:border-purple-500 focus:ring-purple-500'
+                        defaultValue='Pakistan'
+                      />
+                      <ErrorMessage
+                        name='address.country'
+                        component='div'
+                        className='mt-1 text-xs text-red-500'
+                      />
+                    </div>
+                  </div>
+
+                  {/* Advance Payment Section */}
+                  <div className="bg-gradient-to-r from-orange-50 to-amber-50 p-4 rounded-xl border border-orange-100">
+                    <h3 className="text-lg font-semibold text-orange-800 mb-3 flex items-center">
+                      <DollarOutlined className="mr-2" />
+                      Advance Payment
+                    </h3>
+                    <div className='flex items-center space-x-3 mb-4'>
+                      <Field name='hasAdvance'>
+                        {({ field, form }: any) => (
+                          <Switch
+                            checked={field.value}
+                            onChange={(checked) => form.setFieldValue('hasAdvance', checked)}
+                            className='bg-orange-500'
+                          />
+                        )}
+                      </Field>
+                      <span className='text-gray-600 text-sm'>Customer wants to pay advance</span>
+                    </div>
+
+                    <Field name='hasAdvance'>
+                      {({ field }: any) => field.value && (
+                        <div className='space-y-3 p-4 bg-white rounded-lg border border-orange-200'>
+                          <div className='grid grid-cols-2 gap-3'>
+                            <div>
+                              <label className='block text-sm font-medium mb-2 text-gray-700'>Amount *</label>
+                              <Field 
+                                name='advance.amount' 
+                                as={Input} 
+                                type='number'
+                                placeholder='Enter amount' 
+                                size='large'
+                                className='h-11 text-base rounded-lg border-gray-200 focus:border-orange-500 focus:ring-orange-500'
+                                prefix={<DollarOutlined className='text-gray-400' />}
+                              />
+                            </div>
+                            <div>
+                              <label className='block text-sm font-medium mb-2 text-gray-700'>Method *</label>
+                              <Field name='advance.method'>
+                                {({ field, form }: any) => (
+                                  <Select
+                                    value={field.value}
+                                    onChange={(value) => form.setFieldValue('advance.method', value)}
+                                    placeholder='Select method'
+                                    size='large'
+                                    className='w-full'
+                                    options={[
+                                      { value: 'cash', label: 'Cash' },
+                                      { value: 'bank', label: 'Bank Transfer' },
+                                      { value: 'jazzcash', label: 'JazzCash' },
+                                      { value: 'card', label: 'Card' },
+                                      { value: 'other', label: 'Other' },
+                                    ]}
+                                  />
+                                )}
+                              </Field>
+                            </div>
+                          </div>
+                          
+                          <div className='grid grid-cols-2 gap-3'>
+                            <div>
+                              <label className='block text-sm font-medium mb-2 text-gray-700'>Reference</label>
+                              <Field 
+                                name='advance.reference' 
+                                as={Input} 
+                                placeholder='Payment reference' 
+                                size='large'
+                                className='h-11 text-base rounded-lg border-gray-200 focus:border-orange-500 focus:ring-orange-500'
+                              />
+                            </div>
+                            <div>
+                              <label className='block text-sm font-medium mb-2 text-gray-700'>Date</label>
+                              <Field name='advance.date'>
+                                {({ field, form }: any) => (
+                                  <DatePicker
+                                    value={field.value ? dayjs(field.value) : null}
+                                    onChange={(date) => form.setFieldValue('advance.date', date ? date.format('YYYY-MM-DDTHH:mm:ssZ') : '')}
+                                    size='large'
+                                    className='w-full'
+                                    format='YYYY-MM-DD'
+                                  />
+                                )}
+                              </Field>
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <label className='block text-sm font-medium mb-2 text-gray-700'>Note</label>
+                            <Field 
+                              name='advance.note' 
+                              as={Input.TextArea} 
+                              placeholder='Additional notes' 
+                              rows={2}
+                              className='rounded-lg border-gray-200 focus:border-orange-500 focus:ring-orange-500'
+                            />
+                          </div>
+                        </div>
                       )}
                     </Field>
-                    <span className='text-gray-600 text-sm'>Customer wants to pay advance</span>
                   </div>
-
-                  <Field name='hasAdvance'>
-                    {({ field }: any) => field.value && (
-                      <div className='space-y-3 p-4 bg-white rounded-lg border border-orange-200'>
-                        <div className='grid grid-cols-2 gap-3'>
-                          <div>
-                            <label className='block text-sm font-medium mb-2 text-gray-700'>Amount *</label>
-                            <Field 
-                              name='advance.amount' 
-                              as={Input} 
-                              type='number'
-                              placeholder='Enter amount' 
-                              size='large'
-                              className='h-11 text-base rounded-lg border-gray-200 focus:border-orange-500 focus:ring-orange-500'
-                              prefix={<DollarOutlined className='text-gray-400' />}
-                            />
-                          </div>
-                          <div>
-                            <label className='block text-sm font-medium mb-2 text-gray-700'>Method *</label>
-                            <Field name='advance.method'>
-                              {({ field, form }: any) => (
-                                <Select
-                                  value={field.value}
-                                  onChange={(value) => form.setFieldValue('advance.method', value)}
-                                  placeholder='Select method'
-                                  size='large'
-                                  className='w-full'
-                                  options={[
-                                    { value: 'cash', label: 'Cash' },
-                                    { value: 'bank', label: 'Bank Transfer' },
-                                    { value: 'jazzcash', label: 'JazzCash' },
-                                    { value: 'card', label: 'Card' },
-                                    { value: 'other', label: 'Other' },
-                                  ]}
-                                />
-                              )}
-                            </Field>
-                          </div>
-                        </div>
-                        
-                        <div className='grid grid-cols-2 gap-3'>
-                          <div>
-                            <label className='block text-sm font-medium mb-2 text-gray-700'>Reference</label>
-                            <Field 
-                              name='advance.reference' 
-                              as={Input} 
-                              placeholder='Payment reference' 
-                              size='large'
-                              className='h-11 text-base rounded-lg border-gray-200 focus:border-orange-500 focus:ring-orange-500'
-                            />
-                          </div>
-                          <div>
-                            <label className='block text-sm font-medium mb-2 text-gray-700'>Date</label>
-                            <Field name='advance.date'>
-                              {({ field, form }: any) => (
-                                <DatePicker
-                                  value={field.value ? dayjs(field.value) : null}
-                                  onChange={(date) => form.setFieldValue('advance.date', date ? date.format('YYYY-MM-DDTHH:mm:ssZ') : '')}
-                                  size='large'
-                                  className='w-full'
-                                  format='YYYY-MM-DD'
-                                />
-                              )}
-                            </Field>
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <label className='block text-sm font-medium mb-2 text-gray-700'>Note</label>
-                          <Field 
-                            name='advance.note' 
-                            as={Input.TextArea} 
-                            placeholder='Additional notes' 
-                            rows={2}
-                            className='rounded-lg border-gray-200 focus:border-orange-500 focus:ring-orange-500'
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </Field>
                 </div>
 
-                {/* Action Buttons */}
-                <div className='flex items-center justify-end gap-3 pt-4 border-t border-gray-200'>
+                <div className='flex items-center justify-end gap-3 pt-4 border-t border-gray-200 mt-6'>
                   <Button 
                     onClick={() => setIsModalOpen(false)}
                     size='large'
