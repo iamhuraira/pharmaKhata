@@ -54,32 +54,46 @@ export async function POST(request: NextRequest) {
 
     // Parse address string into structured format
     let currentAddress = undefined;
-    if (address && typeof address === 'string') {
-      // Simple parsing - split by comma and assign to fields
-      const addressParts = address.split(',').map(part => part.trim());
-      if (addressParts.length >= 3) {
+    if (address) {
+      if (typeof address === 'string') {
+        // Handle legacy string format
+        const addressParts = address.split(',').map(part => part.trim());
+        if (addressParts.length >= 3) {
+          currentAddress = {
+            street: addressParts[0] || '',
+            city: addressParts[1] || '',
+            state: addressParts[2] || '',
+            country: addressParts[3] || 'Pakistan' // Default country
+          };
+        } else if (addressParts.length === 1) {
+          // Single part address - treat as street
+          currentAddress = {
+            street: addressParts[0] || '',
+            city: 'Unknown',
+            state: 'Unknown',
+            country: 'Pakistan'
+          };
+        }
+      } else if (typeof address === 'object' && address !== null) {
+        // Handle structured address object from frontend
         currentAddress = {
-          street: addressParts[0] || '',
-          city: addressParts[1] || '',
-          state: addressParts[2] || '',
-          country: addressParts[3] || 'Pakistan' // Default country
-        };
-      } else if (addressParts.length === 1) {
-        // Single part address - treat as street
-        currentAddress = {
-          street: addressParts[0] || '',
-          city: 'Unknown',
-          state: 'Unknown',
-          country: 'Pakistan'
+          street: address.street || '',
+          city: address.city || '',
+          state: address.state || '',
+          country: address.country || 'Pakistan'
         };
       }
     }
+
+    console.log('🔍 API - Received address:', address);
+    console.log('🔍 API - Parsed currentAddress:', currentAddress);
 
     // Create customer with initial balance
     const customer = new User({
       firstName,
       lastName,
       phone,
+      email: email || undefined, // Add email field
       password: 'defaultPassword123', // Set a default password
       role: customerRole._id,
       status: 'active',
@@ -87,7 +101,19 @@ export async function POST(request: NextRequest) {
       currentAddress: currentAddress // Save parsed address
     });
 
+    console.log('🔍 API - Customer object before save:', customer);
+    console.log('🔍 API - currentAddress being saved:', currentAddress);
+
     await customer.save();
+
+    console.log('🔍 API - Customer saved successfully');
+    console.log('🔍 API - Saved customer data:', {
+      id: customer._id,
+      firstName: customer.firstName,
+      lastName: customer.lastName,
+      currentAddress: (customer as any).currentAddress,
+      balance: customer.balance
+    });
 
     // If advance payment, create ledger transaction and update balance
     if (advance && advance.amount > 0) {
@@ -130,10 +156,11 @@ export async function POST(request: NextRequest) {
           firstName: customer.firstName,
           lastName: customer.lastName,
           phone: customer.phone,
-          email: email || '', // Default value since it's not in User model
-          address: address || {}, // Default empty address
-          balance: advance && advance.amount > 0 ? (advance.amount) : 0, // Use advance amount or 0
-          creditLimit: creditLimit || 0, // Default value
+          email: email || '',
+          address: currentAddress ? `${currentAddress.street}, ${currentAddress.city}, ${currentAddress.state}, ${currentAddress.country}` : '',
+          currentAddress: currentAddress, // Return the structured address
+          balance: advance && advance.amount > 0 ? (advance.amount) : 0,
+          creditLimit: creditLimit || 0,
           status: customer.status
         }
       },
@@ -217,6 +244,9 @@ export async function GET(request: NextRequest) {
           addressValue = parts.join(', ');
         }
       }
+
+      console.log(`🔍 Customer ${customer.firstName} ${customer.lastName} - currentAddress:`, customer.currentAddress);
+      console.log(`🔍 Customer ${customer.firstName} ${customer.lastName} - formatted address:`, addressValue);
 
       return {
         id: customer._id,

@@ -122,7 +122,28 @@ export const useCreateOrder = () => {
   const queryClient = useQueryClient();
 
   const onSuccess = (data: IAPISuccess) => {
+    // Invalidate order-related queries
     queryClient.invalidateQueries({ queryKey: ['orders'] });
+    queryClient.invalidateQueries({ queryKey: ['order'] });
+    
+    // Invalidate customer-related queries since orders affect customer balance
+    queryClient.invalidateQueries({ queryKey: ['customers'] });
+    queryClient.invalidateQueries({ queryKey: ['customer'] });
+    queryClient.invalidateQueries({ queryKey: ['customerTransactions'] });
+    queryClient.invalidateQueries({ queryKey: ['customerBalance'] });
+    queryClient.invalidateQueries({ queryKey: ['ledger'] });
+    queryClient.invalidateQueries({ queryKey: ['reports'] });
+    
+    // Invalidate specific customer if we have the customerId
+    if (data?.response?.data?.customer?.id) {
+      queryClient.invalidateQueries({ 
+        queryKey: ['customer', data.response.data.customer.id] 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: ['customerTransactions', data.response.data.customer.id] 
+      });
+    }
+    
     openToast(
       'success',
       data?.response?.data?.message ||
@@ -163,8 +184,28 @@ export const useUpdateOrder = () => {
   const queryClient = useQueryClient();
 
   const onSuccess = (data: IAPISuccess) => {
+    // Invalidate order-related queries
     queryClient.invalidateQueries({ queryKey: ['orders'] });
     queryClient.invalidateQueries({ queryKey: ['order'] });
+    
+    // Invalidate customer-related queries since orders affect customer balance
+    queryClient.invalidateQueries({ queryKey: ['customers'] });
+    queryClient.invalidateQueries({ queryKey: ['customer'] });
+    queryClient.invalidateQueries({ queryKey: ['customerTransactions'] });
+    queryClient.invalidateQueries({ queryKey: ['customerBalance'] });
+    queryClient.invalidateQueries({ queryKey: ['ledger'] });
+    queryClient.invalidateQueries({ queryKey: ['reports'] });
+    
+    // Invalidate specific customer if we have the customerId
+    if (data?.response?.data?.customer?.id) {
+      queryClient.invalidateQueries({ 
+        queryKey: ['customer', data.response.data.customer.id] 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: ['customerTransactions', data.response.data.customer.id] 
+      });
+    }
+    
     openToast(
       'success',
       data?.response?.data?.message ||

@@ -161,6 +161,13 @@ const CustomerDetailPage = () => {
   console.log(`🔍 Customer ${customerId} - Total Advances:`, totalAdvances);
   console.log(`🔍 Customer ${customerId} - Total Advance Allocations:`, totalAdvanceAllocations);
   console.log(`🔍 Customer ${customerId} - Current Balance from DB:`, currentBalance);
+  console.log(`🔍 Customer ${customerId} - Full customer object:`, customer);
+  console.log(`🔍 Customer ${customerId} - Address fields:`, {
+    currentAddress: customer.currentAddress,
+    address: customer.address,
+    addressKeys: customer.currentAddress ? Object.keys(customer.currentAddress) : 'No currentAddress',
+    addressType: typeof customer.currentAddress
+  });
   
   // Filter orders for this customer
   const customerOrders = allOrders.filter((order: any) => {
@@ -491,6 +498,48 @@ const CustomerDetailPage = () => {
           </Row>
         </Card>
 
+        {/* Quick Payment Summary */}
+        <Card title="Recent Payment Activity" className="mb-6" bodyStyle={{ padding: '16px 12px' }}>
+          <Row gutter={16}>
+            <Col xs={24} md={8}>
+              <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+                <DollarOutlined className="text-green-500 text-2xl mb-2" />
+                <Text strong className="text-green-600 text-lg block">Total Payments</Text>
+                <Text strong className="text-green-600 text-xl">
+                  {totalPayments.toLocaleString()} PKR
+                </Text>
+                <Text type="secondary" className="text-sm block mt-1">
+                  {transactions.filter((t: any) => t.type === 'payment').length} payment(s)
+                </Text>
+              </div>
+            </Col>
+            <Col xs={24} md={8}>
+              <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <DollarOutlined className="text-blue-500 text-2xl mb-2" />
+                <Text strong className="text-blue-600 text-lg block">Total Advances</Text>
+                <Text strong className="text-blue-600 text-xl">
+                  {totalAdvances.toLocaleString()} PKR
+                </Text>
+                <Text type="secondary" className="text-sm block mt-1">
+                  {transactions.filter((t: any) => t.type === 'advance').length} advance(s)
+                </Text>
+              </div>
+            </Col>
+            <Col xs={24} md={8}>
+              <div className="text-center p-4 bg-orange-50 rounded-lg border border-orange-200">
+                <CalendarOutlined className="text-orange-500 text-2xl mb-2" />
+                <Text strong className="text-orange-600 text-lg block">Outstanding</Text>
+                <Text strong className="text-orange-600 text-xl">
+                  {totalOutstandingAmount.toLocaleString()} PKR
+                </Text>
+                <Text type="secondary" className="text-sm block mt-1">
+                  {outstandingOrders.length} order(s) pending
+                </Text>
+              </div>
+            </Col>
+          </Row>
+        </Card>
+
         {/* Recent Orders */}
         {customerOrders.length > 0 && (
           <div className="mt-6">
@@ -554,17 +603,21 @@ const CustomerDetailPage = () => {
                 <div>
                   <Text strong>Address:</Text>
                   <Text className="ml-2">
-                    {typeof customer.address === 'string' 
-                      ? customer.address 
-                      : customer.address?.street || 'Address not specified'
-                    }
+                    {customer.currentAddress ? (
+                      <>
+                        {customer.currentAddress.street && `${customer.currentAddress.street}`}
+                        {customer.currentAddress.city && `, ${customer.currentAddress.city}`}
+                        {customer.currentAddress.state && `, ${customer.currentAddress.state}`}
+                        {customer.currentAddress.country && `, ${customer.currentAddress.country}`}
+                      </>
+                    ) : customer.address ? (
+                      typeof customer.address === 'string' 
+                        ? customer.address 
+                        : `${customer.address.street || ''}${customer.address.city ? `, ${customer.address.city}` : ''}${customer.address.state ? `, ${customer.address.state}` : ''}${customer.address.country ? `, ${customer.address.country}` : ''}`
+                    ) : (
+                      'Address not specified'
+                    )}
                   </Text>
-                  {/* Debug: Show address structure */}
-                  {process.env.NODE_ENV === 'development' && customer.address && (
-                    <Text type="secondary" className="text-xs block mt-1">
-                      Debug: {JSON.stringify(customer.address)}
-                    </Text>
-                  )}
                 </div>
               </div>
             </div>
@@ -604,6 +657,73 @@ const CustomerDetailPage = () => {
             </div>
           </Col>
         </Row>
+      </Card>
+
+      {/* Payment Record Section */}
+      <Card title="Payment Records" className="mb-6">
+        <div className="mb-4">
+          <Button 
+            type="primary" 
+            icon={<PlusOutlined />}
+            onClick={() => setIsPaymentModalOpen(true)}
+            className="bg-primary hover:bg-primaryDark"
+          >
+            Record New Payment
+          </Button>
+        </div>
+        
+        {transactionsLoading ? (
+          <div className="text-center py-8">
+            <Spin size="large" />
+            <div className="mt-4">Loading payment records...</div>
+          </div>
+        ) : transactionsError ? (
+          <div className="text-center py-8">
+            <Text type="danger">Failed to load payment records</Text>
+            <br />
+            <Button onClick={() => window.location.reload()} className="mt-2">
+              Retry
+            </Button>
+          </div>
+        ) : transactions.filter((t: any) => t.type === 'payment').length === 0 ? (
+          <Empty 
+            description="No payment records found" 
+            className="py-8"
+          />
+        ) : (
+          <div className="space-y-3">
+            {transactions
+              .filter((t: any) => t.type === 'payment')
+              .map((payment: any, index: number) => (
+                <div key={payment._id || index} className="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <DollarOutlined className="text-green-500 text-xl" />
+                    <div>
+                      <Text strong className="text-green-600">
+                        {payment.description || 'Payment Received'}
+                      </Text>
+                      <br />
+                      <Text type="secondary" className="text-sm">
+                        {formatDate(payment.date)}
+                        {payment.ref?.orderId && ` • Order: ${payment.ref.orderId}`}
+                        {payment.ref?.txnNo && ` • Ref: ${payment.ref.txnNo}`}
+                        {payment.ref?.note && ` • Note: ${payment.ref.note}`}
+                      </Text>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <Text strong className="text-lg text-green-600">
+                      +{(payment.credit || 0).toLocaleString()} PKR
+                    </Text>
+                    <br />
+                    <Text type="secondary" className="text-sm capitalize">
+                      {payment.method || 'Unknown method'}
+                    </Text>
+                  </div>
+                </div>
+              ))}
+          </div>
+        )}
       </Card>
 
       {/* Transactions and Payments */}
@@ -742,6 +862,18 @@ const CustomerDetailPage = () => {
       </Card>
 
       {/* Payment Modal */}
+      {/* 
+        When recording payments, the following queries will be automatically invalidated:
+        - customers (customer list)
+        - customer (individual customer data)
+        - customerTransactions (transaction history)
+        - customerBalance (balance calculations)
+        - orders (order list and details)
+        - ledger (ledger transactions)
+        - reports (monthly summaries, etc.)
+        
+        This ensures all related data stays in sync after payment recording.
+      */}
       <CustomerPaymentModal
         visible={isPaymentModalOpen}
         onCancel={() => setIsPaymentModalOpen(false)}

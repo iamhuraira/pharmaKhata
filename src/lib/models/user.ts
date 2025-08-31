@@ -74,6 +74,11 @@ const userSchema = new Schema(
       type: String,
     },
 
+    email: {
+      type: String,
+      required: false,
+    },
+
     currentAddress: {
       type: AddressSchema,
       required: false,
@@ -131,7 +136,9 @@ const userSchema = new Schema(
 // Prevent duplicate model compilation
 let User: mongoose.Model<IUserDoc>;
 try {
-  User = mongoose.model<IUserDoc>(MODELS.USERS);
+  // Delete the existing model to force recompilation with new schema
+  mongoose.deleteModel(MODELS.USERS);
+  User = mongoose.model<IUserDoc>(MODELS.USERS, userSchema);
 } catch {
   User = mongoose.model<IUserDoc>(MODELS.USERS, userSchema);
 }

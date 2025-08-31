@@ -96,6 +96,31 @@ const recordPayment = async (paymentData: any) => {
   return response.json();
 };
 
+// Utility function to invalidate all customer-related queries
+const invalidateCustomerQueries = (queryClient: any, customerId?: string) => {
+  // Invalidate all customer-related queries
+  queryClient.invalidateQueries({ queryKey: ['customers'] });
+  queryClient.invalidateQueries({ queryKey: ['customerTransactions'] });
+  queryClient.invalidateQueries({ queryKey: ['customer'] });
+  queryClient.invalidateQueries({ queryKey: ['orders'] });
+  queryClient.invalidateQueries({ queryKey: ['customerBalance'] });
+  queryClient.invalidateQueries({ queryKey: ['ledger'] });
+  queryClient.invalidateQueries({ queryKey: ['reports'] });
+  
+  // Invalidate specific customer queries if customerId is provided
+  if (customerId) {
+    queryClient.invalidateQueries({ 
+      queryKey: ['customer', customerId] 
+    });
+    queryClient.invalidateQueries({ 
+      queryKey: ['customerTransactions', customerId] 
+    });
+    queryClient.invalidateQueries({ 
+      queryKey: ['customerBalance', customerId] 
+    });
+  }
+};
+
 // Get all customers with filters
 export const useGetAllCustomers = (params?: {
   q?: string;
@@ -157,7 +182,7 @@ export const useCreateCustomer = () => {
   const queryClient = useQueryClient();
 
   const onSuccess = (data: IAPISuccess) => {
-    queryClient.invalidateQueries({ queryKey: ['customers'] });
+    invalidateCustomerQueries(queryClient);
     openToast(
       'success',
       data?.response?.data?.message ||
@@ -198,8 +223,7 @@ export const useUpdateCustomer = () => {
   const queryClient = useQueryClient();
 
   const onSuccess = (data: IAPISuccess) => {
-    queryClient.invalidateQueries({ queryKey: ['customers'] });
-    queryClient.invalidateQueries({ queryKey: ['customer'] });
+    invalidateCustomerQueries(queryClient, data?.response?.data?.id);
     openToast(
       'success',
       data?.response?.data?.message ||
@@ -240,7 +264,7 @@ export const useDeleteCustomer = () => {
   const queryClient = useQueryClient();
 
   const onSuccess = (data: IAPISuccess) => {
-    queryClient.invalidateQueries({ queryKey: ['customers'] });
+    invalidateCustomerQueries(queryClient);
     openToast(
       'success',
       data?.response?.data?.message ||
@@ -281,8 +305,8 @@ export const useRecordPayment = () => {
   const queryClient = useQueryClient();
 
   const onSuccess = (data: IAPISuccess) => {
-    queryClient.invalidateQueries({ queryKey: ['customers'] });
-    queryClient.invalidateQueries({ queryKey: ['customerTransactions'] });
+    invalidateCustomerQueries(queryClient, data?.response?.data?.customerId);
+    
     openToast(
       'success',
       data?.response?.data?.message ||

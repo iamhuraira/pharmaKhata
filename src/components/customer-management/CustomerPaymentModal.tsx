@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Modal, Input, InputNumber, Select, DatePicker, Button } from 'antd';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
@@ -42,6 +42,8 @@ const CustomerPaymentModal: React.FC<CustomerPaymentModalProps> = ({
   dueAmount = 0,
   loading = false
 }) => {
+  const wasVisibleRef = useRef(false);
+
   const formik = useFormik({
     initialValues: {
       amount: dueAmount > 0 ? dueAmount : 0,
@@ -64,6 +66,30 @@ const CustomerPaymentModal: React.FC<CustomerPaymentModalProps> = ({
     }
   });
 
+  // Update form values when dueAmount changes or modal opens
+  useEffect(() => {
+    if (visible && !wasVisibleRef.current) {
+      console.log('🔍 Modal opened with dueAmount:', dueAmount);
+      console.log('🔍 Setting amount to:', dueAmount > 0 ? dueAmount : 0);
+      
+      // Reset form first, then set values
+      formik.resetForm({
+        values: {
+          amount: dueAmount > 0 ? dueAmount : 0,
+          method: 'cash',
+          reference: '',
+          date: dayjs(),
+          note: ''
+        }
+      });
+      
+      console.log('🔍 Form values after reset:', formik.values);
+      wasVisibleRef.current = true;
+    } else if (!visible) {
+      wasVisibleRef.current = false;
+    }
+  }, [visible, dueAmount]);
+
   const handleCancel = () => {
     formik.resetForm();
     onCancel();
@@ -71,6 +97,7 @@ const CustomerPaymentModal: React.FC<CustomerPaymentModalProps> = ({
 
   return (
     <Modal
+      key={`payment-modal-${customerId}-${dueAmount}`}
       title={`Record Payment - ${customerName}`}
       open={visible}
       onCancel={handleCancel}
@@ -86,8 +113,9 @@ const CustomerPaymentModal: React.FC<CustomerPaymentModalProps> = ({
               Amount (PKR) *
             </label>
             <InputNumber
+              name="amount"
               value={formik.values.amount}
-              onChange={(value) => formik.setFieldValue('amount', value)}
+              onChange={(value) => formik.setFieldValue('amount', value || 0)}
               className="w-full"
               min={0}
               max={999999}
@@ -127,13 +155,14 @@ const CustomerPaymentModal: React.FC<CustomerPaymentModalProps> = ({
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Reference *
             </label>
-            <Input
-              value={formik.values.reference}
-              onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
-              placeholder="e.g., Receipt #123, Transaction ID"
-              status={formik.touched.reference && formik.errors.reference ? 'error' : ''}
-            />
+              <Input
+                name="reference"
+                value={formik.values.reference}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                placeholder="e.g., Receipt #123, Transaction ID"
+                status={formik.touched.reference && formik.errors.reference ? 'error' : ''}
+              />
             {formik.touched.reference && formik.errors.reference && (
               <div className="text-red-500 text-sm mt-1">{formik.errors.reference}</div>
             )}
@@ -145,6 +174,7 @@ const CustomerPaymentModal: React.FC<CustomerPaymentModalProps> = ({
               Payment Date *
             </label>
             <DatePicker
+              name="date"
               value={formik.values.date}
               onChange={(date) => formik.setFieldValue('date', date)}
               className="w-full"
@@ -162,6 +192,7 @@ const CustomerPaymentModal: React.FC<CustomerPaymentModalProps> = ({
               Note
             </label>
             <Input.TextArea
+              name="note"
               value={formik.values.note}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}

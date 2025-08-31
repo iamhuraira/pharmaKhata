@@ -30,7 +30,18 @@ const customerSchema = Yup.object().shape({
     country: Yup.string().required('Country is required'),
   }),
   hasAdvance: Yup.boolean(),
-  advance: Yup.object().optional(),
+  advance: Yup.object().when('hasAdvance', ([hasAdvance]) => {
+    if (hasAdvance) {
+      return Yup.object().shape({
+        amount: Yup.number().required('Amount is required').positive('Amount must be positive'),
+        method: Yup.string().required('Method is required'),
+        reference: Yup.string().required('Reference is required'),
+        date: Yup.string().required('Date is required'),
+        note: Yup.string().optional(),
+      });
+    }
+    return Yup.object().optional();
+  }),
 });
 
 const CustomerManagement = () => {
@@ -85,6 +96,8 @@ const CustomerManagement = () => {
   };
 
   const handleSubmit = async (values: typeof initialValues) => {
+    console.log('🔍 handleSubmit called with values:', values);
+    
     const customerData = {
       firstName: values.firstName,
       lastName: values.lastName,
@@ -100,8 +113,13 @@ const CustomerManagement = () => {
     console.log('🔍 Frontend - Advance data:', values.advance);
     console.log('🔍 Frontend - Has advance:', values.hasAdvance);
     
-    await createCustomer(customerData);
-    setIsModalOpen(false);
+    try {
+      await createCustomer(customerData);
+      console.log('🔍 Customer created successfully');
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error('🔍 Error creating customer:', error);
+    }
   };
 
   // Filter customers based on search query
@@ -394,11 +412,14 @@ const CustomerManagement = () => {
           initialValues={initialValues}
           validationSchema={customerSchema}
           onSubmit={handleSubmit}
+          enableReinitialize={false}
         >
-          {({ handleSubmit, isValid, values }) => (
-            <Form>
-              <div className='h-full flex flex-col'>
-                <div className='cm-scroll flex-1 pr-1 space-y-6' style={{ maxHeight: '70vh' }}>
+          {({ handleSubmit, isValid, values, submitForm, errors, touched }) => {
+            console.log('🔍 Formik render - isValid:', isValid, 'errors:', errors, 'touched:', touched);
+            return (
+              <Form>
+                <div className='h-full flex flex-col'>
+                  <div className='cm-scroll flex-1 pr-1 space-y-6' style={{ maxHeight: '70vh' }}>
                   {/* Basic Information Section */}
                   <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-100">
                     <h3 className="text-lg font-semibold text-blue-800 mb-3 flex items-center">
@@ -661,6 +682,12 @@ const CustomerManagement = () => {
                     size='large'
                     loading={isLoading}
                     disabled={!isValid}
+                    onClick={() => {
+                      console.log('🔍 Submit button clicked');
+                      console.log('🔍 Form isValid:', isValid);
+                      console.log('🔍 Form values:', values);
+                      submitForm();
+                    }}
                     className='h-11 px-8 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-200'
                   >
                     {isLoading ? 'Creating...' : 'Create Customer'}
@@ -668,7 +695,8 @@ const CustomerManagement = () => {
                 </div>
               </div>
             </Form>
-          )}
+          );
+        }}
         </Formik>
       </Modal>
     </div>

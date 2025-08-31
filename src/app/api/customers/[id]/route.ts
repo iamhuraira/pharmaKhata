@@ -37,6 +37,10 @@ export async function GET(
       }, { status: 404 });
     }
 
+    console.log('🔍 API - Raw customer from DB:', customer);
+    console.log('🔍 API - currentAddress from DB:', (customer as any).currentAddress);
+    console.log('🔍 API - customer keys:', Object.keys(customer));
+
     // Handle address field - convert from AddressSchema to string or object
     let addressValue = '';
     const currentAddress = (customer as any).currentAddress;
@@ -52,6 +56,9 @@ export async function GET(
       }
     }
 
+    console.log('🔍 API - Parsed addressValue:', addressValue);
+    console.log('🔍 API - Final currentAddress to return:', currentAddress);
+
     return NextResponse.json({
       success: true,
       data: {
@@ -65,6 +72,7 @@ export async function GET(
           role: customer.role,
           balance: customer.balance || 0,
           address: addressValue,
+          currentAddress: (customer as any).currentAddress, // Also return the structured address
           createdAt: customer.createdAt,
           updatedAt: customer.updatedAt
         }
