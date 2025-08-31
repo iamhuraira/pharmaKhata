@@ -7,6 +7,7 @@ export enum UserRoles {
 
 export enum UserStatus {
   ACTIVE = 'active', // Active user
+  INACTIVE = 'inactive', // Soft deleted user (maintains data)
   DELETED = 'deleted', // Deleted user itself
   BLOCKED = 'blocked', // Blocked by admin
 }

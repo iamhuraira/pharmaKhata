@@ -24,8 +24,12 @@ const getCustomerById = async (customerId: string) => {
   return response.json();
 };
 
-const getCustomerTransactions = async (customerId: string) => {
-  const response = await fetch(`/api/customers/${customerId}/transactions`);
+const getCustomerTransactions = async (customerId: string, params?: { page?: number; limit?: number }) => {
+  const queryString = new URLSearchParams();
+  if (params?.page) queryString.append('page', params.page.toString());
+  if (params?.limit) queryString.append('limit', params.limit.toString());
+
+  const response = await fetch(`/api/customers/${customerId}/transactions?${queryString}`);
   if (!response.ok) {
     throw new Error('Failed to fetch customer transactions');
   }
@@ -160,10 +164,10 @@ export const useGetCustomerById = (customerId: string) => {
 };
 
 // Get customer transactions
-export const useGetCustomerTransactions = (customerId: string) => {
+export const useGetCustomerTransactions = (customerId: string, params?: { page?: number; limit?: number }) => {
   const { data, error, isLoading, refetch } = useQuery({
-    queryKey: ['customerTransactions', customerId],
-    queryFn: () => getCustomerTransactions(customerId),
+    queryKey: ['customerTransactions', customerId, params],
+    queryFn: () => getCustomerTransactions(customerId, params),
     enabled: !!customerId,
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
@@ -171,6 +175,7 @@ export const useGetCustomerTransactions = (customerId: string) => {
   return {
     transactions: data?.data?.transactions || [],
     summary: data?.data?.summary,
+    pagination: data?.data?.pagination,
     error,
     isLoading,
     refetch,

@@ -1,8 +1,8 @@
 // components/CustomerManagement.tsx
 'use client';
 import { useState } from 'react';
-import { Button, Input, Modal, Card, Typography, Divider, Switch, Select, DatePicker, Avatar, Table } from 'antd';
-import { UserAddOutlined, SearchOutlined, PhoneOutlined, EnvironmentOutlined, MailOutlined, DollarOutlined, UserOutlined } from '@ant-design/icons';
+import { Button, Input, Modal, Card, Typography, Divider, Switch, Select, DatePicker, Avatar, Table, Popconfirm } from 'antd';
+import { UserAddOutlined, SearchOutlined, PhoneOutlined, EnvironmentOutlined, MailOutlined, DollarOutlined, UserOutlined, DeleteOutlined } from '@ant-design/icons';
 import { Eye } from 'lucide-react';
 import clsx from 'clsx';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
@@ -11,7 +11,8 @@ import dayjs from 'dayjs';
 import { useRouter } from 'next/navigation';
 
 import CustomerQuickView from './CustomerQuickView';
-import { useCreateCustomer, useGetAllCustomers } from '@/hooks/customer';
+import CustomerPaymentModal from './CustomerPaymentModal';
+import { useCreateCustomer, useGetAllCustomers, useRecordPayment, useDeleteCustomer } from '@/hooks/customer';
 import { useGetOrders } from '@/hooks/order';
 
 const { Title, Text } = Typography;
@@ -52,9 +53,20 @@ const CustomerManagement = () => {
   const [viewMode] = useState<'list'>('list');
   const [quickViewCustomer, setQuickViewCustomer] = useState<any>(null);
   const [isQuickViewVisible, setIsQuickViewVisible] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [selectedCustomerForPayment, setSelectedCustomerForPayment] = useState<any>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
+  
   const { createCustomer, isLoading } = useCreateCustomer();
-  const { customers, isLoading: isLoadingCustomers } = useGetAllCustomers();
+  const { customers, isLoading: isLoadingCustomers, pagination } = useGetAllCustomers({
+    page: currentPage,
+    limit: pageSize,
+    q: searchQuery
+  });
   const { orders: allOrders } = useGetOrders();
+  const { recordPayment, isLoading: isRecordingPayment } = useRecordPayment();
+  const { deleteCustomer, isLoading: isDeleting } = useDeleteCustomer();
 
   
 
@@ -72,6 +84,25 @@ const CustomerManagement = () => {
 
   const goToDetails = (customerId: string) => {
     router.push(`/dashboard/customer-management/${customerId}`);
+  };
+
+  const handleAddPayment = (customer: any) => {
+    setSelectedCustomerForPayment(customer);
+    setIsPaymentModalOpen(true);
+  };
+
+  const handleDelete = async (customerId: string) => {
+    try {
+      await deleteCustomer(customerId);
+      console.log('🔍 Customer deactivated successfully:', customerId);
+    } catch (error) {
+      console.error('Error deactivating customer:', error);
+    }
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    setCurrentPage(1); // Reset to first page when searching
   };
 
   const initialValues = {
@@ -147,7 +178,7 @@ const CustomerManagement = () => {
             placeholder='Search customers by name or phone...'
             prefix={<SearchOutlined className='text-base text-gray-400' />}
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={handleSearchChange}
             size='large'
             className='rounded-xl h-12 text-base shadow-sm border border-gray-200 focus:border-primary w-full'
           />
@@ -194,10 +225,10 @@ const CustomerManagement = () => {
           // Empty state
           <Card className='text-center py-16 border-0 bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-md'>
             <div className='inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full mb-6'>
-              <UserAddOutlined className='text-gray-400 text-4xl' />
+              <UserAddOutlined className="text-gray-400 text-4xl" />
             </div>
             <Title level={3} className='!mb-3 text-gray-600 !text-2xl'>No customers found</Title>
-            <Text type='secondary' className='text-lg text-gray-500 max-w-md mx-auto'>
+            <Text type='secondary' className="text-lg text-gray-500 max-w-md mx-auto">
               {searchQuery ? 'Try adjusting your search terms' : 'Start by adding your first customer to build your database'}
             </Text>
           </Card>
@@ -205,11 +236,12 @@ const CustomerManagement = () => {
           // Customer table with Ant Design Table component
           <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm" data-testid="customers-table">
             <Table
+              dataSource={filteredCustomers}
               columns={[
                 {
                   title: 'Customer',
                   key: 'customer',
-                  width: '40%',
+                  width: '30%',
                   render: (customer: any) => (
                     <div className="flex items-center space-x-3 py-2">
                       <Avatar 
@@ -218,28 +250,36 @@ const CustomerManagement = () => {
                         className="bg-gradient-to-br from-primary to-blue-600"
                       />
                       <div>
-                        <div className="font-semibold text-neutral-900 text-base">
+                        <div className="font-semibold text-gray-900">
                           {customer.firstName} {customer.lastName}
                         </div>
-                        <div className="text-sm text-neutral-500 mt-1">
-                          {customer.phone}
-                        </div>
+                        <div className="text-sm text-gray-500">{customer.phone}</div>
                       </div>
                     </div>
                   ),
                 },
                 {
                   title: 'Outstanding Orders',
-                  key: 'orders',
-                  width: '20%',
-                  align: 'center' as const,
+                  key: 'outstandingOrders',
+                  width: '25%',
                   render: (customer: any) => {
-                    // For now, show placeholder since we're focusing on balance
-                    // TODO: Add outstanding orders calculation when needed
+                    const customerOrders = allOrders.filter((order: any) => {
+                      let orderCustomerId = order.customer?.id || order.customer?._id;
+                      if (typeof orderCustomerId === 'object' && orderCustomerId !== null) {
+                        orderCustomerId = orderCustomerId.id || orderCustomerId._id;
+                      }
+                      return orderCustomerId === customer.id;
+                    });
+                    
+                    const outstandingOrders = customerOrders.filter((order: any) => 
+                      order.status === 'created' || order.status === 'partial'
+                    );
+                    
                     return (
-                      <div className="text-center py-2">
-                        <div className="font-semibold text-neutral-800 text-lg">-</div>
-                        <div className="text-xs text-neutral-500 mt-1">orders</div>
+                      <div className="text-center">
+                        <div className="text-lg font-semibold text-gray-900">
+                          {outstandingOrders.length}
+                        </div>
                       </div>
                     );
                   },
@@ -248,38 +288,17 @@ const CustomerManagement = () => {
                   title: 'Balance',
                   key: 'balance',
                   width: '25%',
-                  align: 'right' as const,
                   render: (customer: any) => {
-                    // Get balance directly from customer object (new approach)
                     const balance = customer.balance || 0;
-                    const balanceSource = 'database';
-                    
                     const isPositive = balance > 0;
-                    const isZero = balance === 0;
                     const isNegative = balance < 0;
                     
-                    console.log(`🔍 Customer ${customer.firstName}: Balance from database = ${balance}`);
-                    
                     return (
-                      <div className="text-right py-2">
-                        <div className={clsx(
-                          "font-semibold text-lg",
-                          isPositive ? "text-emerald-600" : 
-                          isNegative ? "text-rose-600" : "text-neutral-600"
-                        )}>
-                          {isPositive ? '+' : ''}{balance.toLocaleString()} <span className="font-normal text-neutral-500">PKR</span>
+                      <div className="text-center">
+                        <div className={`text-lg font-bold ${isPositive ? 'text-green-600' : isNegative ? 'text-red-600' : 'text-gray-600'}`}>
+                          {isPositive ? '+' : ''}{balance.toLocaleString()} PKR
                         </div>
-                        <div className={clsx(
-                          "text-sm mt-1",
-                          isPositive ? "text-emerald-500" : 
-                          isNegative ? "text-rose-500" : "text-neutral-500"
-                        )}>
-                          {isPositive ? 'Advance' : 
-                           isNegative ? 'Amount Due' : 'Settled'}
-                        </div>
-                        <div className="text-xs text-neutral-400 mt-1">
-                          {balanceSource}
-                        </div>
+                       
                       </div>
                     );
                   },
@@ -287,71 +306,46 @@ const CustomerManagement = () => {
                 {
                   title: 'Actions',
                   key: 'actions',
-                  width: '15%',
-                  align: 'center' as const,
+                  width: '20%',
                   render: (customer: any) => (
-                    <div className="flex justify-center py-2">
-                      <button
-                        type="button"
-                        onClick={(e) => { 
-                          e.stopPropagation(); 
-                          goToDetails(customer.id || customer._id); 
-                        }}
-                        aria-label="Open customer details"
-                        data-testid={`view-${customer.id || customer._id}`}
-                        className="
-                          inline-flex h-9 w-9 items-center justify-center
-                          rounded-full
-                          bg-neutral-900/90 text-white
-                          hover:bg-neutral-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400/40
-                          transition-colors
-                        "
-                      >
-                        <Eye className="h-4 w-4" aria-hidden="true" />
-                        <span className="sr-only">View</span>
-                      </button>
+                    <div className="flex justify-center items-center gap-3 space-x-2">
+                      <Button
+                        type="text"
+                        size="small"
+                        icon={<Eye className="w-6 h-6" />}
+                        onClick={() => openQuickView(customer)}
+                        className="text-gray-600 hover:text-gray-800"
+                      />
+                      <DollarOutlined 
+                        onClick={() => handleAddPayment(customer)}
+                        style={{ fontSize: '20px' }}
+                        className="text-green-600 hover:text-green-800 cursor-pointer transition-colors duration-200"
+                      />
                     </div>
                   ),
                 },
               ]}
-              dataSource={filteredCustomers.filter((customer: any) => {
-                // Ensure customer is a valid object with required properties
-                const isValid = customer && 
-                               typeof customer === 'object' && 
-                               customer !== null &&
-                               (customer.id || customer._id) &&
-                               typeof customer.firstName === 'string';
-                
-                if (!isValid) {
-                  console.warn('🔍 Filtered out invalid customer:', customer);
-                }
-                
-                return isValid;
-              })}
-              rowKey={(record) => record.id || record._id || Math.random().toString()}
               pagination={{
-                pageSize: 10,
+                current: currentPage,
+                pageSize: pageSize,
+                total: pagination?.totalCustomers || 0,
                 showSizeChanger: true,
                 showQuickJumper: true,
                 showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} customers`,
-                position: ['bottomCenter'],
-                className: 'customer-pagination',
-              }}
-              className="customer-table"
-              rowClassName="hover:bg-neutral-50 transition-colors cursor-pointer"
-              size="middle"
-              onRow={(record) => ({
-                onClick: () => openQuickView(record),
-                onKeyDown: (e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    openQuickView(record);
-                  }
+                onChange: (page, size) => {
+                  setCurrentPage(page);
+                  setPageSize(size);
                 },
-                tabIndex: 0,
-                'data-testid': `row-${record.id || record._id}`,
-                role: 'button',
-                'aria-label': `View details for ${record.firstName} ${record.lastName}`,
-              })}
+                onShowSizeChange: (current, size) => {
+                  setCurrentPage(1);
+                  setPageSize(size);
+                },
+                pageSizeOptions: ['5','10', '20', '50', '100'],
+                position: ['bottomCenter'],
+                className: 'customer-pagination'
+              }}
+              rowKey="id"
+              className="customer-table"
             />
           </div>
         )}
@@ -359,12 +353,38 @@ const CustomerManagement = () => {
 
       {/* Customer Quick View Modal */}
       <CustomerQuickView
-        customer={quickViewCustomer}
         visible={isQuickViewVisible}
+        customer={quickViewCustomer}
         onClose={closeQuickView}
         dueAmount={quickViewCustomer?.balance || 0}
-        outstandingOrdersCount={0} // TODO: Add outstanding orders calculation when needed
+        outstandingOrdersCount={0}
       />
+
+      {/* Payment Modal */}
+      {selectedCustomerForPayment && (
+        <CustomerPaymentModal
+          visible={isPaymentModalOpen}
+          onCancel={() => {
+            setIsPaymentModalOpen(false);
+            setSelectedCustomerForPayment(null);
+          }}
+          onSubmit={async (paymentData) => {
+            try {
+              await recordPayment(paymentData);
+              setIsPaymentModalOpen(false);
+              setSelectedCustomerForPayment(null);
+              // The hook will automatically refresh the data
+            } catch (error) {
+              console.error('Payment failed:', error);
+              // Error is handled by the hook
+            }
+          }}
+          customerId={selectedCustomerForPayment.id}
+          customerName={`${selectedCustomerForPayment.firstName} ${selectedCustomerForPayment.lastName}`}
+          dueAmount={0} // For now, set to 0 since we're adding advance payment
+          loading={isRecordingPayment}
+        />
+      )}
 
       {/* Create Customer Modal */}
       <Modal

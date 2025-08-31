@@ -127,6 +127,19 @@ const userSchema = new Schema(
       default: 0,
       required: false,
     },
+
+    // Soft delete fields
+    deletedAt: {
+      type: Date,
+      required: false,
+      default: null,
+    },
+
+    deletedBy: {
+      type: String,
+      required: false,
+      default: null,
+    },
   },
   {
     timestamps: true,

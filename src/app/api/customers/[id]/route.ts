@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { User } from '@/lib/models/user';
 import { Role } from '@/lib/models/roles';
+import { UserStatus } from '@/lib/constants/enums';
 
 export async function GET(
   request: NextRequest,
@@ -28,13 +29,31 @@ export async function GET(
     const customer = await User.findOne({ 
       _id: id, 
       role: customerRole._id 
-    }).select('firstName lastName phone email status role balance createdAt updatedAt currentAddress');
+    }).select('firstName lastName phone email status role balance createdAt updatedAt currentAddress deletedAt deletedBy');
 
     if (!customer) {
       return NextResponse.json({
         success: false,
         message: 'Customer not found'
       }, { status: 404 });
+    }
+
+    // Check if customer is inactive
+    if ((customer.status as string) === 'inactive' || (customer.status as string) === 'deleted') {
+      return NextResponse.json({
+        success: false,
+        message: 'Customer has been deactivated',
+        data: {
+          customer: {
+            id: customer._id,
+            firstName: customer.firstName,
+            lastName: customer.lastName,
+            status: customer.status,
+            deletedAt: (customer as any).deletedAt,
+            deletedBy: (customer as any).deletedBy
+          }
+        }
+      }, { status: 410 }); // 410 Gone - resource no longer available
     }
 
     console.log('🔍 API - Raw customer from DB:', customer);
@@ -204,18 +223,36 @@ export async function DELETE(
       }, { status: 404 });
     }
 
-    // Soft delete by updating status
-    await User.findByIdAndUpdate(customerId, {
-      status: 'deleted'
-    });
+    // Soft delete by updating status to inactive
+    const updatedCustomer = await User.findByIdAndUpdate(
+      customerId,
+      {
+        status: UserStatus.INACTIVE,
+        deletedAt: new Date(), // Track when customer was deactivated
+        deletedBy: 'system' // You can add user ID here if implementing user tracking
+      },
+      { new: true }
+    ).select('-password');
+
+    console.log(`🔍 Customer ${customerId} deactivated successfully`);
 
     return NextResponse.json({
       success: true,
-      message: 'Customer deleted successfully'
+      message: 'Customer deactivated successfully',
+      data: {
+        customer: {
+          id: updatedCustomer!._id,
+          firstName: updatedCustomer!.firstName,
+          lastName: updatedCustomer!.lastName,
+          phone: updatedCustomer!.phone,
+          status: updatedCustomer!.status,
+          deletedAt: updatedCustomer!.deletedAt
+        }
+      }
     });
 
   } catch (error) {
-    console.error('Delete customer error:', error);
+    console.error('Deactivate customer error:', error);
     return NextResponse.json({
       success: false,
       message: 'Internal server error'

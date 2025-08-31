@@ -6,7 +6,7 @@ import { LedgerTransaction } from '@/lib/models/ledger';
 import { Order } from '@/lib/models/order';
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -16,6 +16,12 @@ export async function GET(
     User && Role && LedgerTransaction && Order;
     
     const { id: customerId } = await params;
+    
+    // Get pagination parameters
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '20');
+    const skip = (page - 1) * limit;
     
     // Validate customer exists
     const customerRole = await Role.findOne({ name: 'customer' });
@@ -38,11 +44,18 @@ export async function GET(
       }, { status: 404 });
     }
 
-    // Get all ledger transactions for this customer
+    // Get total count for pagination
+    const totalTransactions = await (LedgerTransaction as any).countDocuments({
+      'ref.customerId': customerId
+    });
+
+    // Get paginated ledger transactions for this customer
     const transactions = await (LedgerTransaction as any).find({
       'ref.customerId': customerId
     })
     .sort({ date: -1, createdAt: -1 })
+    .skip(skip)
+    .limit(limit)
     .lean();
 
     // Get customer orders (for future use)
@@ -100,6 +113,14 @@ export async function GET(
           totalAdvances,
           totalAdvanceAllocations,
           outstandingAmount
+        },
+        pagination: {
+          currentPage: page,
+          pageSize: limit,
+          totalTransactions,
+          totalPages: Math.ceil(totalTransactions / limit),
+          hasNextPage: page < Math.ceil(totalTransactions / limit),
+          hasPrevPage: page > 1
         }
       }
     });

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { User } from '@/lib/models/user';
 import { Role } from '@/lib/models/roles';
+import { UserStatus } from '@/lib/constants/enums';
 import { LedgerTransaction } from '@/lib/models/ledger';
 import { updateCustomerBalance } from '@/lib/utils/customerBalance';
 import bcrypt from 'bcrypt';
@@ -203,6 +204,9 @@ export async function GET(request: NextRequest) {
     
     if (status && status !== 'all') {
       filter.status = status;
+    } else {
+      // By default, only show active customers (exclude inactive/deleted)
+      filter.status = { $nin: [UserStatus.INACTIVE, UserStatus.DELETED] };
     }
     
     if (search) {
