@@ -57,6 +57,17 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
       title: 'Product',
       dataIndex: 'productName',
       key: 'productName',
+      render: (productName: string, record: any) => (
+        <div>
+          <div className="font-medium">{productName}</div>
+          {record.productId?.packType && (
+            <div className="text-sm text-gray-500">Pack: {record.productId.packType}</div>
+          )}
+          {record.productId?.shortDescription && (
+            <div className="text-xs text-gray-400">{record.productId.shortDescription}</div>
+          )}
+        </div>
+      ),
     },
     {
       title: 'Quantity',
@@ -83,7 +94,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
   const orderItems = order.items?.map((item: any) => ({
     ...item,
     total: item.qty * item.price,
-    productName: item.product?.name || item.productName || 'Unknown Product'
+    productName: item.productName || item.productId?.name || `Product ID: ${item.productId}` || 'Unknown Product'
   })) || [];
 
   const subtotal = orderItems.reduce((sum: number, item: any) => sum + item.total, 0);
@@ -133,16 +144,35 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
         <Card title="Customer Information">
           <Descriptions column={2}>
             <Descriptions.Item label="Name">
-              {order.customer?.firstName} {order.customer?.lastName}
+              {order.customer?.name || (order.customer?.id?.firstName && order.customer?.id?.lastName ? 
+                `${order.customer.id.firstName} ${order.customer.id.lastName}` : 'N/A')}
             </Descriptions.Item>
             <Descriptions.Item label="Phone">
-              {order.customer?.phone}
+              {order.customer?.phone || order.customer?.id?.phone || 'N/A'}
             </Descriptions.Item>
             <Descriptions.Item label="Email">
-              {order.customer?.email || 'N/A'}
+              {order.customer?.id?.email || 'N/A'}
             </Descriptions.Item>
             <Descriptions.Item label="Address">
-              {order.customer?.address || 'N/A'}
+              {(() => {
+                const currentAddress = order.customer?.id?.currentAddress;
+                if (!currentAddress) return 'N/A';
+                
+                if (typeof currentAddress === 'string') {
+                  return currentAddress;
+                }
+                
+                // Handle structured address object
+                const parts = [];
+                if (currentAddress.street) parts.push(currentAddress.street);
+                if (currentAddress.city) parts.push(currentAddress.city);
+                if (currentAddress.state) parts.push(currentAddress.state);
+                if (currentAddress.country && currentAddress.country !== 'Pakistan') {
+                  parts.push(currentAddress.country);
+                }
+                
+                return parts.length > 0 ? parts.join(', ') : 'N/A';
+              })()}
             </Descriptions.Item>
           </Descriptions>
         </Card>

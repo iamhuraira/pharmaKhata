@@ -312,7 +312,8 @@ export async function GET(request: NextRequest) {
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
-        .populate('customer.id', 'firstName lastName phone')
+        .populate('customer.id', 'firstName lastName phone email currentAddress')
+        .populate('items.productId', 'name packType shortDescription')
         .lean(),
       (Order as any).countDocuments(filter)
     ]);
