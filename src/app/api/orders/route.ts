@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
     const lastBalance = lastTransaction ? lastTransaction.runningBalance : 0;
     const runningBalance = lastBalance; // No cash movement for order creation
 
-    // Create main order transaction (customer owes the NET amount after payments and advance)
+    // Create main order transaction (customer owes the FULL order amount)
     const ledgerTransaction = new LedgerTransaction({
       date: new Date(),
       type: 'sale',
@@ -182,15 +182,21 @@ export async function POST(request: NextRequest) {
         party: `${customerExists.firstName} ${customerExists.lastName}`
       },
       credit: 0,
-      debit: balance, // Debit shows NET amount owed (after payments and advance)
+      debit: grandTotal, // Debit shows FULL order amount
       runningBalance
     });
 
     await ledgerTransaction.save();
 
+    // Note: Advance allocation is handled in order totals, not as separate ledger transaction
+    // The advance was already credited when the customer made the advance payment
+    // The order transaction shows the full amount owed, and the advance allocation
+    // is tracked in the order totals for display purposes
+
     // Update customer balance directly
-    // Customer owes more money (negative balance change)
-    await updateCustomerBalance(customer.id, -balance, 'order_creation');
+    // Customer owes the full order amount (negative balance change)
+    // The advance allocation is handled in the order totals, not in balance update
+    await updateCustomerBalance(customer.id, -grandTotal, 'order_creation');
 
     // ❌ REMOVED: Additional on-account transaction creation
     // The main transaction already shows the correct NET amount owed

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { IAPIError, IAPISuccess } from '@/types/api';
 import { openToast } from '@/utils/toaster';
+import { invalidateCustomerQueries } from './utils/invalidation';
 
 // Mock API functions for now - these should be implemented in services
 const getAllCustomers = async (params?: any) => {
@@ -100,30 +101,7 @@ const recordPayment = async (paymentData: any) => {
   return response.json();
 };
 
-// Utility function to invalidate all customer-related queries
-const invalidateCustomerQueries = (queryClient: any, customerId?: string) => {
-  // Invalidate all customer-related queries
-  queryClient.invalidateQueries({ queryKey: ['customers'] });
-  queryClient.invalidateQueries({ queryKey: ['customerTransactions'] });
-  queryClient.invalidateQueries({ queryKey: ['customer'] });
-  queryClient.invalidateQueries({ queryKey: ['orders'] });
-  queryClient.invalidateQueries({ queryKey: ['customerBalance'] });
-  queryClient.invalidateQueries({ queryKey: ['ledger'] });
-  queryClient.invalidateQueries({ queryKey: ['reports'] });
-  
-  // Invalidate specific customer queries if customerId is provided
-  if (customerId) {
-    queryClient.invalidateQueries({ 
-      queryKey: ['customer', customerId] 
-    });
-    queryClient.invalidateQueries({ 
-      queryKey: ['customerTransactions', customerId] 
-    });
-    queryClient.invalidateQueries({ 
-      queryKey: ['customerBalance', customerId] 
-    });
-  }
-};
+// Remove the old utility function - now using centralized one
 
 // Get all customers with filters
 export const useGetAllCustomers = (params?: {

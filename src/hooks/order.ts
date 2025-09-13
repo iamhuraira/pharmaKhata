@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { IAPIError, IAPISuccess } from '@/types/api';
 import { openToast } from '@/utils/toaster';
+import { invalidateOrderQueries } from './utils/invalidation';
 
 // Mock API functions for now - these should be implemented in services
 const getOrders = async (params?: any) => {
@@ -74,6 +75,24 @@ const deleteOrder = async (orderId: string) => {
   return response.json();
 };
 
+const recordOrderPayment = async (paymentData: any) => {
+  const { orderId, ...data } = paymentData;
+  const response = await fetch(`/api/orders/${orderId}/payment`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to record payment');
+  }
+  
+  return response.json();
+};
+
 // Get all orders with filters
 export const useGetOrders = (
   params?: {
@@ -122,27 +141,12 @@ export const useCreateOrder = () => {
   const queryClient = useQueryClient();
 
   const onSuccess = (data: IAPISuccess) => {
-    // Invalidate order-related queries
-    queryClient.invalidateQueries({ queryKey: ['orders'] });
-    queryClient.invalidateQueries({ queryKey: ['order'] });
-    
-    // Invalidate customer-related queries since orders affect customer balance
-    queryClient.invalidateQueries({ queryKey: ['customers'] });
-    queryClient.invalidateQueries({ queryKey: ['customer'] });
-    queryClient.invalidateQueries({ queryKey: ['customerTransactions'] });
-    queryClient.invalidateQueries({ queryKey: ['customerBalance'] });
-    queryClient.invalidateQueries({ queryKey: ['ledger'] });
-    queryClient.invalidateQueries({ queryKey: ['reports'] });
-    
-    // Invalidate specific customer if we have the customerId
-    if (data?.response?.data?.customer?.id) {
-      queryClient.invalidateQueries({ 
-        queryKey: ['customer', data.response.data.customer.id] 
-      });
-      queryClient.invalidateQueries({ 
-        queryKey: ['customerTransactions', data.response.data.customer.id] 
-      });
-    }
+    // Use centralized invalidation
+    invalidateOrderQueries(
+      queryClient,
+      data?.response?.data?.order?.id,
+      data?.response?.data?.customer?.id
+    );
     
     openToast(
       'success',
@@ -184,27 +188,12 @@ export const useUpdateOrder = () => {
   const queryClient = useQueryClient();
 
   const onSuccess = (data: IAPISuccess) => {
-    // Invalidate order-related queries
-    queryClient.invalidateQueries({ queryKey: ['orders'] });
-    queryClient.invalidateQueries({ queryKey: ['order'] });
-    
-    // Invalidate customer-related queries since orders affect customer balance
-    queryClient.invalidateQueries({ queryKey: ['customers'] });
-    queryClient.invalidateQueries({ queryKey: ['customer'] });
-    queryClient.invalidateQueries({ queryKey: ['customerTransactions'] });
-    queryClient.invalidateQueries({ queryKey: ['customerBalance'] });
-    queryClient.invalidateQueries({ queryKey: ['ledger'] });
-    queryClient.invalidateQueries({ queryKey: ['reports'] });
-    
-    // Invalidate specific customer if we have the customerId
-    if (data?.response?.data?.customer?.id) {
-      queryClient.invalidateQueries({ 
-        queryKey: ['customer', data.response.data.customer.id] 
-      });
-      queryClient.invalidateQueries({ 
-        queryKey: ['customerTransactions', data.response.data.customer.id] 
-      });
-    }
+    // Use centralized invalidation
+    invalidateOrderQueries(
+      queryClient,
+      data?.response?.data?.order?.id,
+      data?.response?.data?.customer?.id
+    );
     
     openToast(
       'success',
@@ -246,7 +235,9 @@ export const useDeleteOrder = () => {
   const queryClient = useQueryClient();
 
   const onSuccess = (data: IAPISuccess) => {
-    queryClient.invalidateQueries({ queryKey: ['orders'] });
+    // Use centralized invalidation
+    invalidateOrderQueries(queryClient);
+    
     openToast(
       'success',
       data?.response?.data?.message ||
@@ -275,6 +266,53 @@ export const useDeleteOrder = () => {
 
   return {
     deleteOrder: mutateAsync,
+    error,
+    isError,
+    isLoading: isPending,
+    isSuccess,
+  };
+};
+
+// Record order payment
+export const useRecordOrderPayment = () => {
+  const queryClient = useQueryClient();
+
+  const onSuccess = (data: IAPISuccess) => {
+    // Use centralized invalidation
+    invalidateOrderQueries(
+      queryClient,
+      data?.response?.data?.order?.id,
+      data?.response?.data?.order?.customer?.id
+    );
+    
+    openToast(
+      'success',
+      data?.response?.data?.message ||
+        data?.response?.message ||
+        data?.message ||
+        'Payment recorded successfully',
+    );
+  };
+
+  const onError = (error: IAPIError) => {
+    openToast(
+      'error',
+      error?.response?.data?.message ||
+        error?.response?.message ||
+        error?.message ||
+        'Failed to record payment',
+    );
+  };
+
+  const { mutateAsync, error, isError, isPending, isSuccess } = useMutation({
+    mutationKey: ['recordOrderPayment'],
+    mutationFn: recordOrderPayment,
+    onSuccess,
+    onError,
+  });
+
+  return {
+    recordOrderPayment: mutateAsync,
     error,
     isError,
     isLoading: isPending,

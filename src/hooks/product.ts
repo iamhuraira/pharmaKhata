@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { invalidateProductQueries } from './utils/invalidation';
 
 // Mock API functions (replace with actual API calls)
 const getProducts = async (params?: { q?: string; categoryId?: string }) => {
@@ -80,8 +81,8 @@ export const useCreateProduct = () => {
   
   return useMutation({
     mutationFn: createProduct,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
+    onSuccess: (data: any) => {
+      invalidateProductQueries(queryClient, data?.data?.product?.id);
     },
   });
 };
@@ -92,8 +93,7 @@ export const useUpdateProduct = () => {
   return useMutation({
     mutationFn: updateProduct,
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      queryClient.invalidateQueries({ queryKey: ['product', variables.id] });
+      invalidateProductQueries(queryClient, variables.id);
     },
   });
 };
@@ -104,7 +104,7 @@ export const useDeleteProduct = () => {
   return useMutation({
     mutationFn: deleteProduct,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
+      invalidateProductQueries(queryClient);
     },
   });
 };

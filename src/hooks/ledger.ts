@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { IAPIError, IAPISuccess } from '@/types/api';
 import { openToast } from '@/utils/toaster';
+import { invalidateLedgerQueries } from './utils/invalidation';
 
 // Mock API functions for now - these should be implemented in services
 const getLedgerTransactions = async (params?: any) => {
@@ -159,7 +160,7 @@ export const useCreateLedgerTransaction = () => {
   const queryClient = useQueryClient();
 
   const onSuccess = (data: IAPISuccess) => {
-    queryClient.invalidateQueries({ queryKey: ['ledgerTransactions'] });
+    invalidateLedgerQueries(queryClient, data?.response?.data?.transaction?.id);
     openToast(
       'success',
       data?.response?.data?.message ||
@@ -200,8 +201,7 @@ export const useUpdateLedgerTransaction = () => {
   const queryClient = useQueryClient();
 
   const onSuccess = (data: IAPISuccess) => {
-    queryClient.invalidateQueries({ queryKey: ['ledgerTransactions'] });
-    queryClient.invalidateQueries({ queryKey: ['ledgerTransaction'] });
+    invalidateLedgerQueries(queryClient, data?.response?.data?.transaction?.id);
     openToast(
       'success',
       data?.response?.data?.message ||
@@ -242,7 +242,7 @@ export const useDeleteLedgerTransaction = () => {
   const queryClient = useQueryClient();
 
   const onSuccess = (data: IAPISuccess) => {
-    queryClient.invalidateQueries({ queryKey: ['ledgerTransactions'] });
+    invalidateLedgerQueries(queryClient);
     openToast(
       'success',
       data?.response?.data?.message ||

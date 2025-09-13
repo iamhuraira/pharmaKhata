@@ -24,11 +24,11 @@ const paymentMethods = [
   { label: 'Other', value: 'other' }
 ];
 
-const validationSchema = Yup.object({
+const createValidationSchema = (maxAmount: number) => Yup.object({
   amount: Yup.number()
     .required('Amount is required')
     .positive('Amount must be positive')
-    .max(999999, 'Amount cannot exceed 999,999'),
+    .max(maxAmount, `Amount cannot exceed PKR ${maxAmount.toLocaleString()}`),
   method: Yup.string().required('Payment method is required'),
   reference: Yup.string().required('Reference is required'),
   date: Yup.date().required('Date is required'),
@@ -54,10 +54,12 @@ const OrderPaymentModal: React.FC<OrderPaymentModalProps> = ({
   })) || [];
 
   const subtotal = orderItems.reduce((sum: number, item: any) => sum + item.total, 0);
-  const discount = order.payment?.discount || 0;
-  const grandTotal = subtotal - discount;
-  const amountReceived = order.payment?.amountReceived || 0;
-  const balanceDue = grandTotal - amountReceived;
+  const discount = order.totals?.discountTotal || 0;
+  const grandTotal = order.totals?.grandTotal || subtotal - discount;
+  const amountReceived = order.totals?.amountReceived || 0;
+  const advanceUsed = order.totals?.advanceUsed || 0;
+  const totalPaid = amountReceived + advanceUsed;
+  const balanceDue = order.totals?.balance || (grandTotal - totalPaid);
 
   const formik = useFormik({
     initialValues: {
@@ -67,7 +69,7 @@ const OrderPaymentModal: React.FC<OrderPaymentModalProps> = ({
       date: dayjs(),
       note: ''
     },
-    validationSchema,
+    validationSchema: createValidationSchema(balanceDue),
     onSubmit: (values) => {
       const paymentData = {
         orderId: order._id || order.orderId,
@@ -119,6 +121,12 @@ const OrderPaymentModal: React.FC<OrderPaymentModalProps> = ({
               <Text>Amount Received:</Text>
               <Text>PKR {amountReceived.toLocaleString()}</Text>
             </div>
+            {advanceUsed > 0 && (
+              <div className="flex justify-between" style={{ color: '#1890ff' }}>
+                <Text>Advance Used:</Text>
+                <Text>PKR {advanceUsed.toLocaleString()}</Text>
+              </div>
+            )}
             <Divider className="my-2" />
             <div className="flex justify-between text-lg">
               <Text strong>Balance Due:</Text>
@@ -126,6 +134,11 @@ const OrderPaymentModal: React.FC<OrderPaymentModalProps> = ({
                 {balanceDue > 0 ? '+' : ''}PKR {balanceDue.toLocaleString()}
               </Text>
             </div>
+            {advanceUsed > 0 && (
+              <div className="text-xs text-gray-500 mt-1">
+                Note: This order used {advanceUsed.toLocaleString()} PKR from customer's advance balance.
+              </div>
+            )}
           </div>
         </Card>
 
@@ -160,7 +173,7 @@ const OrderPaymentModal: React.FC<OrderPaymentModalProps> = ({
                   status={formik.touched.amount && formik.errors.amount ? 'error' : ''}
                 />
                 {formik.touched.amount && formik.errors.amount && (
-                  <div className="text-red-500 text-sm mt-1">{formik.errors.amount}</div>
+                  <div className="text-red-500 text-sm mt-1">{String(formik.errors.amount)}</div>
                 )}
                 <div className="text-sm text-gray-500 mt-1">
                   Maximum payment: PKR {balanceDue.toLocaleString()}
@@ -185,7 +198,7 @@ const OrderPaymentModal: React.FC<OrderPaymentModalProps> = ({
                   ))}
                 </Select>
                 {formik.touched.method && formik.errors.method && (
-                  <div className="text-red-500 text-sm mt-1">{formik.errors.method}</div>
+                  <div className="text-red-500 text-sm mt-1">{String(formik.errors.method)}</div>
                 )}
               </div>
 
@@ -195,6 +208,7 @@ const OrderPaymentModal: React.FC<OrderPaymentModalProps> = ({
                   Reference *
                 </label>
                 <Input
+                  name="reference"
                   value={formik.values.reference}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
@@ -202,7 +216,7 @@ const OrderPaymentModal: React.FC<OrderPaymentModalProps> = ({
                   status={formik.touched.reference && formik.errors.reference ? 'error' : ''}
                 />
                 {formik.touched.reference && formik.errors.reference && (
-                  <div className="text-red-500 text-sm mt-1">{formik.errors.reference}</div>
+                  <div className="text-red-500 text-sm mt-1">{String(formik.errors.reference)}</div>
                 )}
               </div>
 
@@ -238,7 +252,7 @@ const OrderPaymentModal: React.FC<OrderPaymentModalProps> = ({
                   status={formik.touched.note && formik.errors.note ? 'error' : ''}
                 />
                 {formik.touched.note && formik.errors.note && (
-                  <div className="text-red-500 text-sm mt-1">{formik.errors.note}</div>
+                  <div className="text-red-500 text-sm mt-1">{String(formik.errors.note)}</div>
                 )}
               </div>
 

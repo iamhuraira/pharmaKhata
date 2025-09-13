@@ -614,27 +614,71 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
                   <div className="border-t border-blue-200 pt-2">
                     <div className="flex justify-between text-sm font-semibold">
                       <Text className="text-blue-800">After Order Balance:</Text>
-                      <span className={selectedCustomer.balance - grandTotal > 0 ? 'text-green-600' : selectedCustomer.balance - grandTotal < 0 ? 'text-red-600' : 'text-neutral-600'}>
-                        {selectedCustomer.balance - grandTotal > 0 ? '+' : ''}{(selectedCustomer.balance - grandTotal).toLocaleString()} PKR
+                      <span className={(() => {
+                        const paymentAmount = paymentMethod === 'on_account' ? 0 : amountReceived;
+                        const afterOrderBalance = selectedCustomer.balance - grandTotal + paymentAmount;
+                        return afterOrderBalance > 0 ? 'text-green-600' : afterOrderBalance < 0 ? 'text-red-600' : 'text-neutral-600';
+                      })()}>
+                        {(() => {
+                          const paymentAmount = paymentMethod === 'on_account' ? 0 : amountReceived;
+                          const afterOrderBalance = selectedCustomer.balance - grandTotal + paymentAmount;
+                          return (afterOrderBalance > 0 ? '+' : '') + afterOrderBalance.toLocaleString() + ' PKR';
+                        })()}
                       </span>
                     </div>
                   </div>
                   
+                  {/* Advance Allocation Info */}
+                  {selectedCustomer.balance > 0 && (
+                    <div className="mt-2 p-2 bg-yellow-50 rounded border border-yellow-200">
+                      <div className="text-xs text-yellow-800">
+                        <div className="font-semibold mb-1">💡 Advance Allocation Preview:</div>
+                        <div>• Customer Advance: {selectedCustomer.balance.toLocaleString()} PKR</div>
+                        <div>• Order Total: {grandTotal.toLocaleString()} PKR</div>
+                        {paymentMethod !== 'on_account' && (
+                          <div>• Payment Received: {amountReceived.toLocaleString()} PKR</div>
+                        )}
+                        <div>• Advance to Use: {Math.min(selectedCustomer.balance, grandTotal - (paymentMethod === 'on_account' ? 0 : amountReceived)).toLocaleString()} PKR</div>
+                        <div>• Balance Due: {(grandTotal - (paymentMethod === 'on_account' ? 0 : amountReceived) - Math.min(selectedCustomer.balance, grandTotal - (paymentMethod === 'on_account' ? 0 : amountReceived))).toLocaleString()} PKR</div>
+                      </div>
+                    </div>
+                  )}
+                  
                   {/* Info Message */}
                   <div className="mt-2 p-2 bg-white rounded border border-blue-300">
-                    {selectedCustomer.balance - grandTotal > 0 ? (
-                      <div className="text-xs text-green-700">
-                        💚 <strong>Advance Remaining:</strong> Customer will have {(selectedCustomer.balance - grandTotal).toLocaleString()} PKR advance after this order
-                      </div>
-                    ) : selectedCustomer.balance - grandTotal < 0 ? (
-                      <div className="text-xs text-orange-600">
-                        ⚠️ <strong>Extra Paisa Dena Parega:</strong> Customer ko is order ke baad {(grandTotal - selectedCustomer.balance).toLocaleString()} PKR aur dena parega
-                      </div>
-                    ) : (
-                      <div className="text-xs text-blue-600">
-                        ✅ <strong>Perfect Balance:</strong> This order will use exactly the customer's advance
-                      </div>
-                    )}
+                    {(() => {
+                      const paymentAmount = paymentMethod === 'on_account' ? 0 : amountReceived;
+                      const advanceToUse = Math.min(selectedCustomer.balance, grandTotal - paymentAmount);
+                      const balanceDue = grandTotal - paymentAmount - advanceToUse;
+                      const remainingAdvance = selectedCustomer.balance - advanceToUse;
+                      const afterOrderBalance = selectedCustomer.balance - grandTotal + paymentAmount;
+                      
+                      if (remainingAdvance > 0) {
+                        return (
+                          <div className="text-xs text-green-700">
+                            💚 <strong>Advance Remaining:</strong> Customer will have {remainingAdvance.toLocaleString()} PKR advance after this order
+                          </div>
+                        );
+                      } else if (balanceDue > 0) {
+                        return (
+                          <div className="text-xs text-orange-600">
+                            ⚠️ <strong>Extra Paisa Dena Parega:</strong> Customer ko is order ke baad {balanceDue.toLocaleString()} PKR aur dena parega
+                          </div>
+                        );
+                      } else if (afterOrderBalance < 0) {
+                        return (
+                          <div className="text-xs text-orange-600">
+                            ⚠️ <strong>Extra Paisa Dena Parega:</strong> Customer ko is order ke baad {Math.abs(afterOrderBalance).toLocaleString()} PKR aur dena parega
+                          </div>
+                        );
+                      } else {
+                        return (
+                          <div className="text-xs text-blue-600">
+                            ✅ <strong>Perfect Balance:</strong> This order will use exactly the customer's advance{paymentMethod !== 'on_account' ? ' and payment' : ''}
+                          </div>
+                        );
+                      }
+                    })()}
                   </div>
                 </div>
               </div>

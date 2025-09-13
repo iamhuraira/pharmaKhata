@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Card, Typography, Button, Table, Tag, Input, Space, Row, Col, Statistic, message } from 'antd';
 import { PlusOutlined, SearchOutlined, EyeOutlined, DollarOutlined, ShoppingCartOutlined } from '@ant-design/icons';
-import { useGetOrders } from '@/hooks/order';
+import { useGetOrders, useRecordOrderPayment } from '@/hooks/order';
 import { useGetAllCustomers } from '@/hooks/customer';
 import CreateOrderModal from '@/components/order-management/CreateOrderModal';
 import OrderDetailModal from '@/components/order-management/OrderDetailModal';
@@ -21,6 +21,7 @@ const OrderManagementPage = () => {
 
   const { orders, isLoading: ordersLoading, refetch: refetchOrders } = useGetOrders();
   const { isLoading: customersLoading } = useGetAllCustomers();
+  const { recordOrderPayment, isLoading: paymentLoading } = useRecordOrderPayment();
 
   // Filter orders based on search query
   const filteredOrders = orders.filter((order: any) => {
@@ -74,14 +75,12 @@ const OrderManagementPage = () => {
   // Handle payment submission
   const handlePaymentSubmitted = async (paymentData: any) => {
     try {
-      // Here you would call the API to record the payment
-      console.log('Payment data:', paymentData);
-      message.success('Payment recorded successfully!');
+      await recordOrderPayment(paymentData);
       setIsPaymentModalOpen(false);
       refetchOrders();
     } catch (error) {
       console.error('Payment error:', error);
-      message.error('Failed to record payment');
+      // Error toast is handled by the hook
     }
   };
 
@@ -402,6 +401,7 @@ const OrderManagementPage = () => {
         onCancel={() => setIsPaymentModalOpen(false)}
         onSubmit={handlePaymentSubmitted}
         order={selectedOrder}
+        loading={paymentLoading}
       />
     </div>
   );

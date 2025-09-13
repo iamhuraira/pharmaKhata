@@ -3,6 +3,7 @@ import { getAllProducts, updateProductQuantity } from '@/services/product';
 import { IGetAllProductsResponse } from '@/types/products';
 import { IAPIError, IAPISuccess } from '@/types/api';
 import { openToast } from '@/utils/toaster';
+import { invalidateProductQueries } from './utils/invalidation';
 
 export const useGetAllProducts = () => {
   const { data, isLoading, isError, error } = useQuery<IGetAllProductsResponse, Error>({
@@ -22,13 +23,13 @@ export const useUpdateProductQuantity = () => {
   const queryClient = useQueryClient();
 
   const onSuccess = (data: IAPISuccess) => {
-    queryClient.invalidateQueries({ queryKey: ['products'] });
+    invalidateProductQueries(queryClient, data?.response?.data?.product?.id);
     openToast(
       'success',
       data?.response?.data?.message ||
         data?.response?.message ||
         data?.message ||
-        'Something went wrong',
+        'Product quantity updated successfully',
     );
   };
 

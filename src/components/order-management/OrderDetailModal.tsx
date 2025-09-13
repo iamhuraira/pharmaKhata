@@ -87,10 +87,12 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
   })) || [];
 
   const subtotal = orderItems.reduce((sum: number, item: any) => sum + item.total, 0);
-  const discount = order.payment?.discount || 0;
-  const grandTotal = subtotal - discount;
-  const amountReceived = order.payment?.amountReceived || 0;
-  const balanceDue = grandTotal - amountReceived;
+  const discount = order.totals?.discountTotal || 0;
+  const grandTotal = order.totals?.grandTotal || subtotal - discount;
+  const amountReceived = order.totals?.amountReceived || 0;
+  const advanceUsed = order.totals?.advanceUsed || 0;
+  const totalPaid = amountReceived + advanceUsed;
+  const balanceDue = order.totals?.balance || (grandTotal - totalPaid);
 
   return (
     <Modal
@@ -159,23 +161,32 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
         {/* Payment Information */}
         <Card title="Payment Information">
           <Row gutter={16}>
-            <Col span={8}>
+            <Col span={6}>
               <Statistic
                 title="Payment Method"
                 value={order.payment?.method || 'On Account'}
                 valueStyle={{ fontSize: '16px' }}
               />
             </Col>
-            <Col span={8}>
+            <Col span={6}>
               <Statistic
                 title="Amount Received"
                 value={amountReceived}
                 precision={2}
                 suffix="PKR"
-                valueStyle={{ color: '#3f8600', fontSize: '18px' }}
+                valueStyle={{ color: '#3f8600', fontSize: '16px' }}
               />
             </Col>
-            <Col span={8}>
+            <Col span={6}>
+              <Statistic
+                title="Advance Used"
+                value={advanceUsed}
+                precision={2}
+                suffix="PKR"
+                valueStyle={{ color: '#1890ff', fontSize: '16px' }}
+              />
+            </Col>
+            <Col span={6}>
               <Statistic
                 title="Balance Due"
                 value={balanceDue}
@@ -188,6 +199,13 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
               />
             </Col>
           </Row>
+          {advanceUsed > 0 && (
+            <div style={{ marginTop: '16px', padding: '12px', backgroundColor: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: '6px' }}>
+              <Text type="secondary">
+                <strong>Note:</strong> This order used {advanceUsed.toLocaleString()} PKR from customer's advance balance.
+              </Text>
+            </div>
+          )}
         </Card>
 
         {/* Order Summary */}
@@ -206,6 +224,16 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
                 <div className="flex justify-between text-lg font-bold">
                   <Text strong>Grand Total:</Text>
                   <Text strong>PKR {grandTotal.toLocaleString()}</Text>
+                </div>
+                {advanceUsed > 0 && (
+                  <div className="flex justify-between" style={{ color: '#1890ff' }}>
+                    <Text>Advance Used:</Text>
+                    <Text>PKR {advanceUsed.toLocaleString()}</Text>
+                  </div>
+                )}
+                <div className="flex justify-between text-lg font-bold" style={{ color: balanceDue > 0 ? '#cf1322' : '#3f8600' }}>
+                  <Text strong>Balance Due:</Text>
+                  <Text strong>PKR {balanceDue.toLocaleString()}</Text>
                 </div>
               </div>
             </Col>
