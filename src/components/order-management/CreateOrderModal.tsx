@@ -673,6 +673,15 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
                       const remainingAdvance = selectedCustomer.balance - advanceToUse;
                       const afterOrderBalance = selectedCustomer.balance - grandTotal + paymentAmount;
                       
+                      // Special case: if payment method is not on_account but amount received is 0
+                      if (paymentMethod !== 'on_account' && amountReceived === 0) {
+                        return (
+                          <div className="text-xs text-red-700">
+                            ❌ <strong>No Payment Received:</strong> Customer will owe the full order amount of {grandTotal.toLocaleString()} PKR
+                          </div>
+                        );
+                      }
+                      
                       if (remainingAdvance > 0) {
                         return (
                           <div className="text-xs text-green-700">
@@ -707,11 +716,28 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
             <Divider />
             <div className="flex justify-between text-lg">
               <Text strong>Final Balance:</Text>
-              <Text strong className={paymentMethod === 'on_account' ? (selectedCustomer && selectedCustomer.balance - grandTotal < 0 ? 'text-red-600' : 'text-green-600') : (balanceDue > 0 ? 'text-red-600' : 'text-green-600')}>
-                {paymentMethod === 'on_account' ? 
-                  (selectedCustomer ? (selectedCustomer.balance - grandTotal).toLocaleString() : grandTotal.toLocaleString()) : 
-                  balanceDue.toLocaleString()
-                } PKR
+              <Text strong className={(() => {
+                if (paymentMethod === 'on_account') {
+                  return selectedCustomer && selectedCustomer.balance - grandTotal < 0 ? 'text-red-600' : 'text-green-600';
+                } else {
+                  // For non-on_account orders, if amount received is 0, show full amount due
+                  if (amountReceived === 0) {
+                    return 'text-red-600';
+                  }
+                  return balanceDue > 0 ? 'text-red-600' : 'text-green-600';
+                }
+              })()}>
+                {(() => {
+                  if (paymentMethod === 'on_account') {
+                    return selectedCustomer ? (selectedCustomer.balance - grandTotal).toLocaleString() : grandTotal.toLocaleString();
+                  } else {
+                    // For non-on_account orders, if amount received is 0, show full amount due
+                    if (amountReceived === 0) {
+                      return grandTotal.toLocaleString();
+                    }
+                    return balanceDue.toLocaleString();
+                  }
+                })()} PKR
               </Text>
             </div>
             
