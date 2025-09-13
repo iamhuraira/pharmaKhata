@@ -39,6 +39,7 @@ interface Product {
   price: number;
   packType: string;
   shortDescription: string;
+  quantity: number;
 }
 
 const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
@@ -393,11 +394,15 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
               >
                               {productsLoading ? (
                 <Option disabled>Loading products...</Option>
-              ) : (products || []).map((product: any) => (
-                <Option key={product.id} value={product.id}>
-                  {product.name} - {product.packType} (PKR {product.price.toLocaleString()})
-                </Option>
-              ))}
+              ) : (products || []).map((product: any) => {
+                const quantity = product.quantity || 0;
+                const stockStatus = quantity === 0 ? ' (Out of Stock)' : quantity <= 10 ? ' (Low Stock)' : '';
+                return (
+                  <Option key={product.id} value={product.id}>
+                    {product.name} - {product.packType} (PKR {product.price.toLocaleString()}) - Qty: {quantity}{stockStatus}
+                  </Option>
+                );
+              })}
               </Select>
             </Form.Item>
 
@@ -433,6 +438,20 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
                 <div><Text>Name: {selectedProduct.name}</Text></div>
                 <div><Text>Pack: {selectedProduct.packType}</Text></div>
                 <div><Text>Price: PKR {selectedProduct.price.toLocaleString()}</Text></div>
+                <div>
+                  <Text>Available Qty: </Text>
+                  <Text 
+                    className={
+                      (selectedProduct.quantity || 0) === 0 ? 'text-red-600 font-semibold' :
+                      (selectedProduct.quantity || 0) <= 10 ? 'text-orange-600 font-semibold' :
+                      'text-green-600 font-semibold'
+                    }
+                  >
+                    {selectedProduct.quantity || 0}
+                    {(selectedProduct.quantity || 0) === 0 ? ' (Out of Stock)' :
+                     (selectedProduct.quantity || 0) <= 10 ? ' (Low Stock)' : ' (In Stock)'}
+                  </Text>
+                </div>
                 <div><Text>Total: PKR {(selectedProduct.price * itemQty).toLocaleString()}</Text></div>
               </div>
             </div>
