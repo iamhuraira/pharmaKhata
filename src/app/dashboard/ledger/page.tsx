@@ -94,6 +94,14 @@ const LedgerPage = () => {
   const netCashFlow = totalCredit - totalDebit;
   const transactionCount = transactions.length;
 
+  // Calculate new metrics for Monthly Cash In Hand and Usage
+  const companyRemitTotal = transactions?.filter((t: any) => t.type === 'company_remit').reduce((sum: number, t: any) => sum + (t.debit || 0), 0) || 0;
+  const expenseTotal = transactions?.filter((t: any) => t.type === 'expense').reduce((sum: number, t: any) => sum + (t.debit || 0), 0) || 0;
+  const commissionTotal = transactions?.filter((t: any) => t.type === 'commission').reduce((sum: number, t: any) => sum + (t.debit || 0), 0) || 0;
+  
+  // Cash In Hand = Total Credit - (Transfer To Company + Expenses + Commission)
+  const cashInHand = totalCredit - (companyRemitTotal + expenseTotal + commissionTotal);
+
   const getTransactionTypeColor = (type: string) => {
     switch (type) {
       case 'sale':
@@ -378,6 +386,77 @@ const LedgerPage = () => {
           </Card>
         </Col>
       </Row>
+
+      {/* Monthly Cash In Hand and Usage */}
+      <Card title="My Monthly Cash In Hand and Usage" className="mb-6">
+        <Row gutter={16}>
+          <Col xs={24} sm={12} lg={4}>
+            <Card className="text-center" size="small">
+              <Statistic
+                title="Total Cash"
+                value={totalCredit}
+                precision={2}
+                suffix="PKR"
+                valueStyle={{ color: '#52c41a' }}
+                prefix={<DollarOutlined />}
+              />
+              <Text type="secondary" className="text-xs">Credit Only</Text>
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={4}>
+            <Card className="text-center" size="small">
+              <Statistic
+                title="Transfer To Company"
+                value={companyRemitTotal}
+                precision={2}
+                suffix="PKR"
+                valueStyle={{ color: '#722ed1' }}
+                prefix={<DollarOutlined />}
+              />
+              <Text type="secondary" className="text-xs">Company Remit</Text>
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={4}>
+            <Card className="text-center" size="small">
+              <Statistic
+                title="Expenses"
+                value={expenseTotal}
+                precision={2}
+                suffix="PKR"
+                valueStyle={{ color: '#cf1322' }}
+                prefix={<DollarOutlined />}
+              />
+              <Text type="secondary" className="text-xs">All Expenses</Text>
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={4}>
+            <Card className="text-center" size="small">
+              <Statistic
+                title="Commission"
+                value={commissionTotal}
+                precision={2}
+                suffix="PKR"
+                valueStyle={{ color: '#fa8c16' }}
+                prefix={<DollarOutlined />}
+              />
+              <Text type="secondary" className="text-xs">Commission Paid</Text>
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={4}>
+            <Card className="text-center" size="small">
+              <Statistic
+                title="Cash In Hand"
+                value={cashInHand}
+                precision={2}
+                suffix="PKR"
+                valueStyle={{ color: cashInHand >= 0 ? '#52c41a' : '#cf1322' }}
+                prefix={<DollarOutlined />}
+              />
+              <Text type="secondary" className="text-xs">After All Deductions</Text>
+            </Card>
+          </Col>
+        </Row>
+      </Card>
 
       {/* Monthly Balance Progression */}
       <Row gutter={16} className="mb-6">
