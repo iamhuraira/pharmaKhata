@@ -215,9 +215,17 @@ export async function POST(request: NextRequest) {
     // is tracked in the order totals for display purposes
 
     // Update customer balance directly
-    // Customer owes the full order amount (negative balance change)
-    // The advance allocation is handled in the order totals, not in balance update
-    await updateCustomerBalance(customer.id, -grandTotal, 'order_creation');
+    // For on_account orders: Customer owes the full order amount (negative balance change)
+    // For paid orders: Customer owes (order amount - payment received)
+    if (payment?.method === 'on_account') {
+      // On account: customer owes the full amount
+      await updateCustomerBalance(customer.id, -grandTotal, 'order_creation');
+    } else {
+      // Paid order: customer owes (order amount - payment received)
+      const balanceChange = -grandTotal + amountReceived;
+      await updateCustomerBalance(customer.id, balanceChange, 'order_creation');
+      console.log(`🔍 Customer balance update: Order ${grandTotal} - Payment ${amountReceived} = Balance change ${balanceChange}`);
+    }
 
     // ❌ REMOVED: Additional on-account transaction creation
     // The main transaction already shows the correct NET amount owed
