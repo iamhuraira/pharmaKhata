@@ -213,12 +213,13 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
       // Reset amount received for on-account orders
       setAmountReceived(0);
     } else if (paymentMethod === 'cash' || paymentMethod === 'jazzcash' || paymentMethod === 'bank') {
-      // Auto-fill with order total, but allow user to adjust
-      if (amountReceived === 0) {
+      // Only auto-fill if the current amount is 0 AND we have a grand total
+      // This prevents overriding user input
+      if (amountReceived === 0 && grandTotal > 0) {
         setAmountReceived(grandTotal);
       }
     }
-  }, [paymentMethod, grandTotal, amountReceived]);
+  }, [paymentMethod, grandTotal]);
 
   const columns = [
     {
@@ -515,10 +516,18 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
                     </div>
                   )}
                   
-                  {amountReceived >= grandTotal && (
+                  {amountReceived > 0 && amountReceived >= grandTotal && (
                     <div className="p-2 bg-green-50 rounded border-l-4 border-green-400">
                       <Text className="text-sm text-green-700">
                         ✅ Payment received: {amountReceived.toLocaleString()} PKR
+                      </Text>
+                    </div>
+                  )}
+                  
+                  {amountReceived === 0 && (
+                    <div className="p-2 bg-red-50 rounded border-l-4 border-red-400">
+                      <Text className="text-sm text-red-700">
+                        ⚠️ No payment received - please enter amount
                       </Text>
                     </div>
                   )}
@@ -571,7 +580,9 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
                   <>
                     <div className="flex justify-between text-sm">
                       <Text>Amount Received:</Text>
-                      <Text className="font-semibold">PKR {amountReceived.toLocaleString()}</Text>
+                      <Text className={`font-semibold ${amountReceived === 0 ? 'text-red-600' : 'text-green-600'}`}>
+                        PKR {amountReceived.toLocaleString()}
+                      </Text>
                     </div>
                     
                     {/* Show advance usage if applicable */}
@@ -626,6 +637,15 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
                         })()}
                       </span>
                     </div>
+                    
+                    {/* Show warning if amount received is 0 for non-on_account orders */}
+                    {paymentMethod !== 'on_account' && amountReceived === 0 && (
+                      <div className="mt-2 p-2 bg-red-50 rounded border border-red-200">
+                        <Text className="text-xs text-red-700">
+                          ⚠️ <strong>No Payment Received:</strong> Customer will owe the full order amount
+                        </Text>
+                      </div>
+                    )}
                   </div>
                   
                   {/* Advance Allocation Info */}
@@ -709,6 +729,10 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
                     }
                   </div>
                 </div>
+              ) : amountReceived === 0 ? (
+                <div className="bg-red-50 text-red-700 p-2 rounded border border-red-200">
+                  <Text strong>❌ No Payment Received - Full Amount Due: PKR {grandTotal.toLocaleString()}</Text>
+                </div>
               ) : balanceDue <= 0 ? (
                 <div className="bg-green-50 text-green-700 p-2 rounded border border-green-200">
                   <Text strong>✅ Order Fully Paid</Text>
@@ -732,7 +756,7 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
             icon={<ShoppingCartOutlined />}
             onClick={handleSubmit}
             loading={createLoading}
-            disabled={!selectedCustomer || orderItems.length === 0 || (paymentMethod !== 'on_account' && (amountReceived <= 0 || (amountReceived + Math.max(0, selectedCustomer?.balance || 0)) < grandTotal))}
+            disabled={!selectedCustomer || orderItems.length === 0 || (paymentMethod !== 'on_account' && amountReceived <= 0) || (paymentMethod !== 'on_account' && (amountReceived + Math.max(0, selectedCustomer?.balance || 0)) < grandTotal)}
           >
             {paymentMethod === 'on_account' ? 'Create Order (On Account)' : 'Create Order'}
           </Button>

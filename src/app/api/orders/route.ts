@@ -188,6 +188,27 @@ export async function POST(request: NextRequest) {
 
     await ledgerTransaction.save();
 
+    // Create payment transaction if payment was received (not on_account)
+    if (payment?.method !== 'on_account' && amountReceived > 0) {
+      const paymentTransaction = new LedgerTransaction({
+        date: new Date(),
+        type: 'payment',
+        method: payment.method,
+        description: `Payment received for Order ${order.orderId} - ${customerExists.firstName} ${customerExists.lastName}`,
+        ref: {
+          customerId: customer.id,
+          orderId: order.orderId,
+          party: `${customerExists.firstName} ${customerExists.lastName}`
+        },
+        credit: amountReceived, // Credit shows payment received
+        debit: 0,
+        runningBalance: lastBalance + amountReceived // Add payment to running balance
+      });
+
+      await paymentTransaction.save();
+      console.log(`🔍 Payment transaction created: ${amountReceived} PKR via ${payment.method}`);
+    }
+
     // Note: Advance allocation is handled in order totals, not as separate ledger transaction
     // The advance was already credited when the customer made the advance payment
     // The order transaction shows the full amount owed, and the advance allocation
