@@ -5,7 +5,7 @@ import { Role } from '@/lib/models/roles';
 import { UserStatus } from '@/lib/constants/enums';
 import { LedgerTransaction } from '@/lib/models/ledger';
 import { updateCustomerBalance } from '@/lib/utils/customerBalance';
-import bcrypt from 'bcrypt';
+// import bcrypt from 'bcrypt'; // Not used in this file
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       email,
       address,
       creditLimit,
-      hasAdvance,
+      // hasAdvance, // Not used in current implementation
       advance
     } = body;
 

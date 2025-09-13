@@ -29,23 +29,23 @@ const ProductCard = ({ product, className, isLoading }: ProductCardProps) => {
 
   if (isLoading || !product) {
     return (
-      <div className={clsx('rounded-xl bg-white p-3 min-h-[160px] shadow-lg border-0', className)}>
+      <div className={clsx('rounded-xl bg-white p-6 min-h-[280px] shadow-lg border border-gray-100', className)}>
         {/* Header Skeleton */}
-        <div className='pr-16'>
-          <Skeleton height={20} className='mb-1' />
-          <div className='mb-1'>
-            <Skeleton height={20} className='w-20' />
+        <div className='pr-20'>
+          <Skeleton height={24} className='mb-3' />
+          <div className='mb-3'>
+            <Skeleton height={24} className='w-24' />
           </div>
-          <Skeleton count={1} className='mb-2' />
+          <Skeleton count={2} className='mb-3' />
         </div>
         
         {/* Footer Skeleton */}
-        <div className='mt-auto pt-2 border-t border-gray-200/50 bg-gradient-to-t from-gray-50/50 to-transparent'>
-          <div className='flex items-center justify-between mb-2'>
-            <Skeleton height={20} className='w-16' />
-            <Skeleton height={20} className='w-12' />
+        <div className='mt-auto pt-4 border-t border-gray-200/50 bg-gradient-to-t from-gray-50/50 to-transparent'>
+          <div className='flex items-center justify-between mb-4'>
+            <Skeleton height={24} className='w-20' />
+            <Skeleton height={24} className='w-16' />
           </div>
-          <Skeleton height={32} className='w-full' />
+          <Skeleton height={48} className='w-full' />
         </div>
       </div>
     );
@@ -94,54 +94,53 @@ const ProductCard = ({ product, className, isLoading }: ProductCardProps) => {
       </Modal>
       <article
         className={clsx(
-          'rounded-xl bg-white p-3 shadow-lg border-0',
-          'relative flex flex-col justify-between min-h-[160px]',
-          'transition-all duration-300 hover:shadow-xl hover:-translate-y-1',
-          'backdrop-blur-sm bg-white/95',
+          'rounded-xl bg-white p-6 shadow-lg border border-gray-100',
+          'relative flex flex-col justify-between min-h-[280px]',
+          'transition-all duration-300 hover:shadow-xl hover:-translate-y-2',
+          'backdrop-blur-sm bg-white/95 group',
           className,
         )}
         aria-labelledby={`product-${product._id?.toString() || 'unknown'}-title`}
       >
-        {/* Rectangular Edit Button */}
-        <div className='absolute right-2 top-2 z-50'>
+        {/* Edit Button - Desktop Optimized */}
+        <div className='absolute right-4 top-4 z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300'>
           <button
             onClick={() => setIsModalOpen(true)}
-            className='flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 text-white shadow-md transition-all duration-200 hover:bg-blue-700 active:bg-blue-800 active:scale-95 border border-blue-500/20'
+            className='flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg transition-all duration-200 hover:from-blue-600 hover:to-blue-700 active:scale-95 border border-blue-400/20 hover:shadow-xl'
             aria-label='Update product quantity'
-            style={{ backgroundColor: '#2563eb', color: 'white' }}
           >
-            <span className='text-white text-lg' style={{ color: 'white' }}>
+            <span className='text-white text-xl'>
               📦
             </span>
           </button>
         </div>
-        {/* Header Section - Mobile Optimized */}
-        <header className='pr-16'>
+        {/* Header Section - Desktop Optimized */}
+        <header className='pr-20'>
           <h3
             id={`product-${product._id?.toString() || 'unknown'}-title`}
-            className='mb-1 text-base font-semibold text-gray-900 leading-tight'
+            className='mb-3 text-lg font-bold text-gray-900 leading-tight group-hover:text-blue-600 transition-colors duration-200'
             title={product.name}
           >
             {product.name}
           </h3>
 
-          {/* Category Badge - Single line for mobile */}
-          <div className='mb-1'>
-            <span className='inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md'>
+          {/* Category Badge - Desktop Optimized */}
+          <div className='mb-3'>
+            <span className='inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md hover:shadow-lg transition-shadow duration-200'>
               {typeof product.categoryId === 'object' ? product.categoryId?.name || 'Uncategorized' : 'Uncategorized'}
             </span>
           </div>
 
           {product.shortDescription && (
-            <p className='mb-2 text-xs text-gray-600 leading-relaxed line-clamp-2'>{product.shortDescription}</p>
+            <p className='mb-3 text-sm text-gray-600 leading-relaxed line-clamp-3'>{product.shortDescription}</p>
           )}
         </header>
 
-        {/* Urdu Description - Mobile Optimized */}
+        {/* Urdu Description - Desktop Optimized */}
         {product.urduDescription && (
-          <div className='mb-2'>
+          <div className='mb-4'>
             <p
-              className='text-right font-urdu text-xs leading-relaxed text-gray-700'
+              className='text-right font-urdu text-sm leading-relaxed text-gray-700'
               dir='rtl'
               lang='ur'
             >
@@ -150,13 +149,13 @@ const ProductCard = ({ product, className, isLoading }: ProductCardProps) => {
           </div>
         )}
 
-        {/* Footer Section - Mobile Optimized */}
-        <footer className='mt-auto pt-2 border-t border-gray-200/50 bg-gradient-to-t from-gray-50/50 to-transparent'>
+        {/* Footer Section - Desktop Optimized */}
+        <footer className='mt-auto pt-4 border-t border-gray-200/50 bg-gradient-to-t from-gray-50/50 to-transparent'>
           {/* Price and Size Row */}
-          <div className='flex items-center justify-between mb-2'>
-            <div className='flex items-center gap-2'>
+          <div className='flex items-center justify-between mb-4'>
+            <div className='flex items-center gap-3'>
               <span
-                className='text-primary-600 text-base font-bold'
+                className='text-blue-600 text-xl font-bold'
                 aria-label={`Price: Rs. ${product.price}`}
               >
                 Rs.{' '}
@@ -167,7 +166,7 @@ const ProductCard = ({ product, className, isLoading }: ProductCardProps) => {
               </span>
               {product.size && (
                 <span
-                  className='text-xs text-gray-600 bg-gradient-to-r from-gray-100 to-gray-200 px-2 py-1 rounded-lg shadow-sm border border-gray-200'
+                  className='text-sm text-gray-600 bg-gradient-to-r from-gray-100 to-gray-200 px-3 py-1.5 rounded-lg shadow-sm border border-gray-200'
                   aria-label={`Package size: ${product.size} ${product.packType}`}
                 >
                   {product.size}
@@ -177,20 +176,20 @@ const ProductCard = ({ product, className, isLoading }: ProductCardProps) => {
             </div>
           </div>
 
-          {/* Stock Status - Full Width for Mobile */}
+          {/* Stock Status - Desktop Optimized */}
           <div className='w-full'>
             <span
               className={clsx(
-                'block w-full text-center rounded-lg px-2 py-1.5 text-xs font-medium transition-all duration-300 shadow-md',
+                'block w-full text-center rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-300 shadow-md hover:shadow-lg',
                 product.quantity > 0
-                  ? 'bg-gradient-to-r from-green-400 to-green-500 text-white border-0 shadow-green-500/30'
-                  : 'bg-gradient-to-r from-red-400 to-red-500 text-white border-0 shadow-red-500/30',
+                  ? 'bg-gradient-to-r from-green-400 to-green-500 text-white border-0 shadow-green-500/30 hover:from-green-500 hover:to-green-600'
+                  : 'bg-gradient-to-r from-red-400 to-red-500 text-white border-0 shadow-red-500/30 hover:from-red-500 hover:to-red-600',
               )}
               aria-live='polite'
             >
               {product.quantity > 0 ? (
                 <>
-                  📦 In Stock <span className='font-bold'>({product.quantity})</span>
+                  📦 In Stock <span className='font-bold text-lg'>({product.quantity})</span>
                 </>
               ) : (
                 '❌ Out of Stock'

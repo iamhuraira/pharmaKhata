@@ -152,7 +152,7 @@ export async function calculateCustomerBalance(customerId: string): Promise<Cust
     let totalSales = 0;    // Total sales/orders
     let totalPayments = 0; // Total payments received
     let totalAdvances = 0; // Total advance payments
-    let totalAdvanceAllocations = 0; // Total advance allocations to orders
+    // let totalAdvanceAllocations = 0; // Total advance allocations to orders - not used
 
     transactions.forEach((txn: any) => {
       if (txn.type === 'sale') {

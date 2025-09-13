@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Modal, Avatar, Typography, Tag, Button, Divider, Row, Col, Statistic } from 'antd';
-import { UserOutlined, PhoneOutlined, EnvironmentOutlined, DollarOutlined, ShoppingCartOutlined } from '@ant-design/icons';
+import { UserOutlined, PhoneOutlined, EnvironmentOutlined, ShoppingCartOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 
 const { Title, Text } = Typography;
@@ -19,7 +19,7 @@ export function CustomerQuickView({
   customer, 
   visible, 
   onClose, 
-  dueAmount, 
+  // dueAmount, // Not used in this component
   outstandingOrdersCount 
 }: CustomerQuickViewProps) {
   const router = useRouter();

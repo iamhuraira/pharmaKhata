@@ -4,7 +4,7 @@ import { Order } from '@/lib/models/order';
 import { User } from '@/lib/models/user';
 import { Role } from '@/lib/models/roles';
 import { LedgerTransaction } from '@/lib/models/ledger';
-import { updateCustomerBalance, getCustomerBalanceFromDB } from '@/lib/utils/customerBalance';
+import { updateCustomerBalance } from '@/lib/utils/customerBalance';
 
 export async function POST(
   request: NextRequest,

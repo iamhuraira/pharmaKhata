@@ -1,18 +1,18 @@
 // components/CustomerManagement.tsx
 'use client';
 import { useState } from 'react';
-import { Button, Input, Modal, Card, Typography, Divider, Switch, Select, DatePicker, Avatar, Table, Popconfirm } from 'antd';
-import { UserAddOutlined, SearchOutlined, PhoneOutlined, EnvironmentOutlined, MailOutlined, DollarOutlined, UserOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Button, Input, Modal, Card, Typography, Switch, Select, DatePicker, Avatar, Table } from 'antd';
+import { UserAddOutlined, SearchOutlined, PhoneOutlined, EnvironmentOutlined, MailOutlined, DollarOutlined, UserOutlined } from '@ant-design/icons';
 import { Eye } from 'lucide-react';
-import clsx from 'clsx';
+// import clsx from 'clsx'; // Not used in this file
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import dayjs from 'dayjs';
-import { useRouter } from 'next/navigation';
+// import { useRouter } from 'next/navigation'; // Not used in this file
 
 import CustomerQuickView from './CustomerQuickView';
 import CustomerPaymentModal from './CustomerPaymentModal';
-import { useCreateCustomer, useGetAllCustomers, useRecordPayment, useDeleteCustomer } from '@/hooks/customer';
+import { useCreateCustomer, useGetAllCustomers, useRecordPayment } from '@/hooks/customer';
 import { useGetOrders } from '@/hooks/order';
 
 const { Title, Text } = Typography;
@@ -46,7 +46,7 @@ const customerSchema = Yup.object().shape({
 });
 
 const CustomerManagement = () => {
-  const router = useRouter();
+  // const router = useRouter(); // Not used in this file
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -66,7 +66,7 @@ const CustomerManagement = () => {
   });
   const { orders: allOrders } = useGetOrders();
   const { recordPayment, isLoading: isRecordingPayment } = useRecordPayment();
-  const { deleteCustomer, isLoading: isDeleting } = useDeleteCustomer();
+  // const { deleteCustomer } = useDeleteCustomer(); // Not used in this file
 
   
 
@@ -82,23 +82,23 @@ const CustomerManagement = () => {
     setQuickViewCustomer(null);
   };
 
-  const goToDetails = (customerId: string) => {
-    router.push(`/dashboard/customer-management/${customerId}`);
-  };
+  // const goToDetails = (customerId: string) => {
+  //   router.push(`/dashboard/customer-management/${customerId}`);
+  // };
 
   const handleAddPayment = (customer: any) => {
     setSelectedCustomerForPayment(customer);
     setIsPaymentModalOpen(true);
   };
 
-  const handleDelete = async (customerId: string) => {
-    try {
-      await deleteCustomer(customerId);
-      console.log('🔍 Customer deactivated successfully:', customerId);
-    } catch (error) {
-      console.error('Error deactivating customer:', error);
-    }
-  };
+  // const handleDelete = async (customerId: string) => {
+  //   try {
+  //     await deleteCustomer(customerId);
+  //     console.log('🔍 Customer deactivated successfully:', customerId);
+  //   } catch (error) {
+  //     console.error('Error deactivating customer:', error);
+  //   }
+  // };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
@@ -336,7 +336,7 @@ const CustomerManagement = () => {
                   setCurrentPage(page);
                   setPageSize(size);
                 },
-                onShowSizeChange: (current, size) => {
+                onShowSizeChange: (_current, size) => {
                   setCurrentPage(1);
                   setPageSize(size);
                 },
@@ -434,7 +434,7 @@ const CustomerManagement = () => {
           onSubmit={handleSubmit}
           enableReinitialize={false}
         >
-          {({ handleSubmit, isValid, values, submitForm, errors, touched }) => {
+          {({ isValid, values, submitForm, errors, touched }) => {
             console.log('🔍 Formik render - isValid:', isValid, 'errors:', errors, 'touched:', touched);
             return (
               <Form>
