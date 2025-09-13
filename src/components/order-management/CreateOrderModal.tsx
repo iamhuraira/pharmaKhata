@@ -216,16 +216,23 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
         // Reset amount received for on-account orders
         setAmountReceived(0);
       } else if (paymentMethod !== 'on_account') {
-        // Only auto-fill if the current amount is 0 AND we have a grand total
-        // This prevents overriding user input when they manually change the amount
-        if (amountReceived === 0 && grandTotal > 0) {
+        // Auto-fill with grand total for non-on_account orders
+        // This will be updated when grandTotal changes if it's currently 0
+        if (grandTotal > 0) {
           setAmountReceived(grandTotal);
         }
       }
       // Update the ref to track the current payment method
       previousPaymentMethod.current = paymentMethod;
     }
-  }, [paymentMethod, amountReceived, grandTotal]);
+  }, [paymentMethod, grandTotal]);
+
+  // Auto-fill amount when grandTotal changes and payment method is not on_account
+  useEffect(() => {
+    if (paymentMethod !== 'on_account' && grandTotal > 0 && amountReceived === 0) {
+      setAmountReceived(grandTotal);
+    }
+  }, [grandTotal, paymentMethod, amountReceived]);
 
   const columns = [
     {
