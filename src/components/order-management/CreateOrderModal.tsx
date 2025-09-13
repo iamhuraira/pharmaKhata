@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Modal, Form, InputNumber, Select, Button, Table, Card, Typography, Divider, message } from 'antd';
 import { PlusOutlined, DeleteOutlined, ShoppingCartOutlined } from '@ant-design/icons';
 import { useGetAllCustomers } from '@/hooks/customer';
@@ -53,6 +53,7 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
   const [itemQty, setItemQty] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState('on_account');
   const [amountReceived, setAmountReceived] = useState(0);
+  const previousPaymentMethod = useRef('on_account');
 
   const { customers, isLoading: customersLoading } = useGetAllCustomers();
   const { data: products, isLoading: productsLoading } = useGetProducts();
@@ -209,17 +210,22 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
 
   // Auto-fill amount received when payment method changes
   useEffect(() => {
-    if (paymentMethod === 'on_account') {
-      // Reset amount received for on-account orders
-      setAmountReceived(0);
-    } else if (paymentMethod === 'cash' || paymentMethod === 'jazzcash' || paymentMethod === 'bank') {
-      // Only auto-fill if the current amount is 0 AND we have a grand total
-      // This prevents overriding user input
-      if (amountReceived === 0 && grandTotal > 0) {
-        setAmountReceived(grandTotal);
+    // Check if payment method actually changed
+    if (previousPaymentMethod.current !== paymentMethod) {
+      if (paymentMethod === 'on_account') {
+        // Reset amount received for on-account orders
+        setAmountReceived(0);
+      } else if (paymentMethod !== 'on_account') {
+        // Only auto-fill if the current amount is 0 AND we have a grand total
+        // This prevents overriding user input when they manually change the amount
+        if (amountReceived === 0 && grandTotal > 0) {
+          setAmountReceived(grandTotal);
+        }
       }
+      // Update the ref to track the current payment method
+      previousPaymentMethod.current = paymentMethod;
     }
-  }, [paymentMethod, grandTotal]);
+  }, [paymentMethod, amountReceived, grandTotal]);
 
   const columns = [
     {
@@ -527,7 +533,7 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
                   {amountReceived === 0 && (
                     <div className="p-2 bg-red-50 rounded border-l-4 border-red-400">
                       <Text className="text-sm text-red-700">
-                        ⚠️ No payment received - please enter amount
+                        ⚠️ Koi payment nahi mili - amount enter karein
                       </Text>
                     </div>
                   )}
@@ -642,7 +648,7 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
                     {paymentMethod !== 'on_account' && amountReceived === 0 && (
                       <div className="mt-2 p-2 bg-red-50 rounded border border-red-200">
                         <Text className="text-xs text-red-700">
-                          ⚠️ <strong>No Payment Received:</strong> Customer will owe the full order amount
+                          ⚠️ <strong>Koi Payment Nahi Mili:</strong> Customer ko poora order amount dena parega
                         </Text>
                       </div>
                     )}
@@ -677,7 +683,7 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
                       if (paymentMethod !== 'on_account' && amountReceived === 0) {
                         return (
                           <div className="text-xs text-red-700">
-                            ❌ <strong>No Payment Received:</strong> Customer will owe the full order amount of {grandTotal.toLocaleString()} PKR
+                            ❌ <strong>Koi Payment Nahi Mili:</strong> Customer ko poora order amount {grandTotal.toLocaleString()} PKR dena parega
                           </div>
                         );
                       }
@@ -757,7 +763,7 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
                 </div>
               ) : amountReceived === 0 ? (
                 <div className="bg-red-50 text-red-700 p-2 rounded border border-red-200">
-                  <Text strong>❌ No Payment Received - Full Amount Due: PKR {grandTotal.toLocaleString()}</Text>
+                  <Text strong>❌ Koi Payment Nahi Mili - Poora Amount Due: PKR {grandTotal.toLocaleString()}</Text>
                 </div>
               ) : balanceDue <= 0 ? (
                 <div className="bg-green-50 text-green-700 p-2 rounded border border-green-200">
