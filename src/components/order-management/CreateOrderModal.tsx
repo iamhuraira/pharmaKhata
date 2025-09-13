@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal, Form, InputNumber, Select, Button, Table, Card, Typography, Divider, message } from 'antd';
 import { PlusOutlined, DeleteOutlined, ShoppingCartOutlined } from '@ant-design/icons';
 import { useGetAllCustomers } from '@/hooks/customer';
@@ -53,7 +53,6 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
   const [itemQty, setItemQty] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState('on_account');
   const [amountReceived, setAmountReceived] = useState(0);
-  const previousPaymentMethod = useRef('on_account');
 
   const { customers, isLoading: customersLoading } = useGetAllCustomers();
   const { data: products, isLoading: productsLoading } = useGetProducts();
@@ -210,29 +209,17 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
 
   // Auto-fill amount received when payment method changes
   useEffect(() => {
-    // Check if payment method actually changed
-    if (previousPaymentMethod.current !== paymentMethod) {
-      if (paymentMethod === 'on_account') {
-        // Reset amount received for on-account orders
-        setAmountReceived(0);
-      } else if (paymentMethod !== 'on_account') {
-        // Auto-fill with grand total for non-on_account orders
-        // This will be updated when grandTotal changes if it's currently 0
-        if (grandTotal > 0) {
-          setAmountReceived(grandTotal);
-        }
+    if (paymentMethod === 'on_account') {
+      // Reset amount received for on-account orders
+      setAmountReceived(0);
+    } else if (paymentMethod !== 'on_account') {
+      // Auto-fill with grand total for non-on_account orders
+      // Only if current amount is 0 to avoid overriding user input
+      if (amountReceived === 0 && grandTotal > 0) {
+        setAmountReceived(grandTotal);
       }
-      // Update the ref to track the current payment method
-      previousPaymentMethod.current = paymentMethod;
     }
-  }, [paymentMethod, grandTotal]);
-
-  // Auto-fill amount when grandTotal changes and payment method is not on_account
-  useEffect(() => {
-    if (paymentMethod !== 'on_account' && grandTotal > 0 && amountReceived === 0) {
-      setAmountReceived(grandTotal);
-    }
-  }, [grandTotal, paymentMethod, amountReceived]);
+  }, [paymentMethod, grandTotal, amountReceived]);
 
   const columns = [
     {
