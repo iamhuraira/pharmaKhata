@@ -77,15 +77,23 @@ export async function POST(request: NextRequest) {
       return sum + itemTotal;
     }, 0);
 
+    // Calculate item-level discount total
+    const itemDiscountTotal = items.reduce((sum: number, item: any) => {
+      return sum + (item.discountValue || 0);
+    }, 0);
+
     // Calculate order-level discount
-    let discountTotal = 0;
+    let orderDiscountTotal = 0;
     if (orderDiscount && orderDiscount.value > 0) {
       if (orderDiscount.type === 'percentage') {
-        discountTotal = subTotal * (orderDiscount.value / 100);
+        orderDiscountTotal = subTotal * (orderDiscount.value / 100);
       } else {
-        discountTotal = orderDiscount.value;
+        orderDiscountTotal = orderDiscount.value;
       }
     }
+
+    // Total discount = item-level discounts + order-level discount
+    const discountTotal = itemDiscountTotal + orderDiscountTotal;
 
     const taxTotal = 0; // For now, no tax
     const grandTotal = subTotal - discountTotal + taxTotal;
@@ -113,12 +121,21 @@ export async function POST(request: NextRequest) {
       customer: {
         id: customer.id,
         name: customer.name || `${customerExists.firstName} ${customerExists.lastName}`,
-        phone: customer.phone || customerExists.phone
+        phone: customer.phone || customerExists.phone,
+        balance: customer.balance || 0
       },
-      items: items.map((item: any) => ({
-        ...item,
-        total: (item.qty * item.price) - ((item.discount || 0) * item.qty)
-      })),
+      items: items.map((item: any) => {
+        const itemSubtotal = item.qty * item.price;
+        const itemDiscountValue = item.discountValue || 0;
+        const itemTotal = itemSubtotal - itemDiscountValue;
+        
+        return {
+          ...item,
+          discountPercentage: item.discountPercentage || 0,
+          discountValue: itemDiscountValue,
+          total: itemTotal
+        };
+      }),
       notes,
       payment: {
         method: 'on_account',

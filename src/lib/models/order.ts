@@ -5,6 +5,8 @@ export interface IOrderItem {
   qty: number;
   price: number;
   discount?: number;
+  discountPercentage?: number;
+  discountValue?: number;
   total: number;
 }
 
@@ -39,6 +41,7 @@ export interface IOrder extends Document {
     id: mongoose.Types.ObjectId;
     name: string;
     phone: string;
+    balance?: number;
   };
   items: IOrderItem[];
   notes?: string;
@@ -56,6 +59,8 @@ const OrderItemSchema = new Schema<IOrderItem>({
   qty: { type: Number, required: true, min: 1 },
   price: { type: Number, required: true, min: 0 },
   discount: { type: Number, default: 0, min: 0 },
+  discountPercentage: { type: Number, default: 0, min: 0, max: 100 },
+  discountValue: { type: Number, default: 0, min: 0 },
   total: { type: Number, required: true, min: 0 }
 });
 
@@ -105,7 +110,8 @@ const OrderSchema = new Schema<IOrder>({
   customer: {
     id: { type: Schema.Types.ObjectId, ref: 'users', required: true },
     name: { type: String, required: true },
-    phone: { type: String, required: true }
+    phone: { type: String, required: true },
+    balance: { type: Number, default: 0 }
   },
   items: [OrderItemSchema],
   notes: { type: String },
@@ -140,16 +146,23 @@ OrderSchema.pre('save', async function(next) {
 // Pre-save middleware to calculate totals
 OrderSchema.pre('save', function(next) {
   if (this.items && this.items.length > 0) {
-    // Calculate subtotal (no item-level discounts)
+    // Calculate subtotal (before any discounts)
     this.totals.subTotal = this.items.reduce((sum, item) => {
-      const itemTotal = item.qty * item.price;
-      return sum + itemTotal;
+      const itemSubtotal = item.qty * item.price;
+      return sum + itemSubtotal;
     }, 0);
     
-    // Discount total is now managed at order level, not item level
-    // Keep existing discountTotal from API calculation
+    // Calculate total discount from all items
+    const itemDiscountTotal = this.items.reduce((sum, item) => {
+      return sum + (item.discountValue || 0);
+    }, 0);
     
-    // Calculate grand total (subtotal - order discount + tax)
+    // Use item-level discount total if not already set by API
+    if (this.totals.discountTotal === 0 || this.totals.discountTotal === undefined) {
+      this.totals.discountTotal = itemDiscountTotal;
+    }
+    
+    // Calculate grand total (subtotal - discount + tax)
     this.totals.grandTotal = this.totals.subTotal - this.totals.discountTotal + this.totals.taxTotal;
     
     // Calculate balance

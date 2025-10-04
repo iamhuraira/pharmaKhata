@@ -21,6 +21,8 @@ interface OrderItem {
   productName: string;
   qty: number;
   price: number;
+  discountPercentage: number;
+  discountValue: number;
   total: number;
 }
 
@@ -52,6 +54,7 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [itemQty, setItemQty] = useState(1);
+  const [itemDiscountPercentage, setItemDiscountPercentage] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState('on_account');
   const [amountReceived, setAmountReceived] = useState(0);
 
@@ -66,9 +69,9 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
   console.log('🔍 CreateOrderModal - selectedCustomer:', selectedCustomer);
 
   // Calculate totals
-  const subtotal = orderItems.reduce((sum, item) => sum + item.total, 0);
-  const discount = 0; // Can be added later
-  const grandTotal = subtotal - discount;
+  const subtotal = orderItems.reduce((sum, item) => sum + (item.qty * item.price), 0);
+  const totalDiscount = orderItems.reduce((sum, item) => sum + item.discountValue, 0);
+  const grandTotal = subtotal - totalDiscount;
   const balanceDue = grandTotal - amountReceived;
 
   // Handle customer selection
@@ -115,6 +118,7 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
     setSelectedProduct(product || null);
     if (product) {
       setItemQty(1);
+      setItemDiscountPercentage(0);
     }
   };
 
@@ -125,18 +129,26 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
       return;
     }
 
+    // Calculate discount value based on percentage
+    const itemSubtotal = selectedProduct.price * itemQty;
+    const discountValue = (itemSubtotal * itemDiscountPercentage) / 100;
+    const itemTotal = itemSubtotal - discountValue;
+
     const newItem: OrderItem = {
       productId: selectedProduct.id,
       productName: selectedProduct.name,
       qty: itemQty,
       price: selectedProduct.price,
-      total: selectedProduct.price * itemQty
+      discountPercentage: itemDiscountPercentage,
+      discountValue: discountValue,
+      total: itemTotal
     };
 
     setOrderItems([...orderItems, newItem]);
     setSelectedProduct(null);
     setItemQty(1);
-    form.setFieldsValue({ productId: undefined, qty: 1 });
+    setItemDiscountPercentage(0);
+    form.setFieldsValue({ productId: undefined, qty: 1, discountPercentage: 0 });
   };
 
   // Remove item from order
@@ -176,17 +188,20 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
         customer: {
           id: selectedCustomer.id,
           name: `${selectedCustomer.firstName} ${selectedCustomer.lastName}`,
-          phone: selectedCustomer.phone
+          phone: selectedCustomer.phone,
+          balance: selectedCustomer.balance || 0 // Add customer balance to order data
         },
         items: orderItems.map(item => ({
           productId: item.productId,
           qty: item.qty,
-          price: item.price
+          price: item.price,
+          discountPercentage: item.discountPercentage,
+          discountValue: item.discountValue
         })),
         payment: {
           method: paymentMethod,
           amountReceived: amountReceived,
-          discount: discount
+          discount: totalDiscount
         },
         dueDate: dayjs().add(30, 'days').toISOString() // Default 30 days
       };
@@ -199,6 +214,7 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
       setOrderItems([]);
       setSelectedCustomer(null);
       setAmountReceived(0);
+      setItemDiscountPercentage(0);
       setPaymentMethod('cash');
       
       onSuccess();
@@ -222,6 +238,16 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
     }
   }, [paymentMethod, grandTotal, amountReceived]);
 
+  // Recalculate discount value when quantity or discount percentage changes
+  useEffect(() => {
+    if (selectedProduct) {
+      // This will trigger re-render of the discount value field
+      form.setFieldsValue({
+        discountValue: (selectedProduct.price * itemQty * itemDiscountPercentage) / 100
+      });
+    }
+  }, [selectedProduct, itemQty, itemDiscountPercentage, form]);
+
   const columns = [
     {
       title: 'Product',
@@ -240,6 +266,20 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
       key: 'price',
       width: 100,
       render: (price: number) => `PKR ${price.toLocaleString()}`,
+    },
+    {
+      title: 'Discount %',
+      dataIndex: 'discountPercentage',
+      key: 'discountPercentage',
+      width: 100,
+      render: (percentage: number) => `${percentage}%`,
+    },
+    {
+      title: 'Discount Value',
+      dataIndex: 'discountValue',
+      key: 'discountValue',
+      width: 120,
+      render: (value: number) => `PKR ${value.toLocaleString()}`,
     },
     {
       title: 'Total',
@@ -419,6 +459,35 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
               />
             </Form.Item>
 
+            <Form.Item
+              name="discountPercentage"
+              label="Discount %"
+              className="w-32"
+            >
+              <InputNumber
+                min={0}
+                max={100}
+                value={itemDiscountPercentage}
+                onChange={(value) => setItemDiscountPercentage(value || 0)}
+                className="w-full"
+                placeholder="0"
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="discountValue"
+              label="Discount Value"
+              className="w-32"
+            >
+              <InputNumber
+                value={selectedProduct ? (selectedProduct.price * itemQty * itemDiscountPercentage) / 100 : 0}
+                disabled
+                className="w-full"
+                formatter={(value) => `PKR ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                parser={(value) => parseFloat(value!.replace(/PKR\s?|(,*)/g, '')) || 0}
+              />
+            </Form.Item>
+
             <Form.Item label=" " className="mb-0">
               <Button
                 type="primary"
@@ -452,7 +521,25 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
                      (selectedProduct.quantity || 0) <= 10 ? ' (Low Stock)' : ' (In Stock)'}
                   </Text>
                 </div>
-                <div><Text>Total: PKR {(selectedProduct.price * itemQty).toLocaleString()}</Text></div>
+                <div className="mt-2 p-2 bg-white rounded border">
+                  <Text strong className="text-sm">Price Calculation:</Text>
+                  <div className="mt-1 space-y-1">
+                    <div className="flex justify-between text-sm">
+                      <Text>Subtotal ({itemQty} × {selectedProduct.price.toLocaleString()}):</Text>
+                      <Text>PKR {(selectedProduct.price * itemQty).toLocaleString()}</Text>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <Text>Discount ({itemDiscountPercentage}%):</Text>
+                      <Text className="text-red-600">-PKR {((selectedProduct.price * itemQty * itemDiscountPercentage) / 100).toLocaleString()}</Text>
+                    </div>
+                    <div className="border-t pt-1">
+                      <div className="flex justify-between text-sm font-semibold">
+                        <Text>Total:</Text>
+                        <Text>PKR {((selectedProduct.price * itemQty) - (selectedProduct.price * itemQty * itemDiscountPercentage) / 100).toLocaleString()}</Text>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -573,8 +660,8 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
               <Text>PKR {subtotal.toLocaleString()}</Text>
             </div>
             <div className="flex justify-between">
-              <Text>Discount:</Text>
-              <Text>PKR {discount.toLocaleString()}</Text>
+              <Text>Total Discount:</Text>
+              <Text className="text-red-600">-PKR {totalDiscount.toLocaleString()}</Text>
             </div>
             <Divider />
             <div className="flex justify-between text-lg font-bold">

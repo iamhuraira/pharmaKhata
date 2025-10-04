@@ -76,14 +76,36 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
       title: 'Quantity',
       dataIndex: 'qty',
       key: 'qty',
-      width: 100,
+      width: 80,
     },
     {
       title: 'Price',
       dataIndex: 'price',
       key: 'price',
-      width: 120,
+      width: 100,
       render: (price: number) => `PKR ${price.toLocaleString()}`,
+    },
+    {
+      title: 'Discount %',
+      dataIndex: 'discountPercentage',
+      key: 'discountPercentage',
+      width: 100,
+      render: (percentage: number) => (
+        <span className={percentage > 0 ? 'text-orange-600 font-semibold' : 'text-gray-500'}>
+          {percentage ? `${percentage}%` : '0%'}
+        </span>
+      ),
+    },
+    {
+      title: 'Discount Value',
+      dataIndex: 'discountValue',
+      key: 'discountValue',
+      width: 120,
+      render: (value: number) => (
+        <span className={value > 0 ? 'text-red-600 font-semibold' : 'text-gray-500'}>
+          {value ? `-PKR ${value.toLocaleString()}` : 'PKR 0'}
+        </span>
+      ),
     },
     {
       title: 'Total',
@@ -94,15 +116,28 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
     },
   ];
 
-  const orderItems = order.items?.map((item: any) => ({
-    ...item,
-    total: item.qty * item.price,
-    productName: item.productName || item.productId?.name || `Product ID: ${item.productId}` || 'Unknown Product'
-  })) || [];
+  const orderItems = order.items?.map((item: any) => {
+    // Calculate discount value if not already present
+    const discountPercentage = item.discountPercentage || 0;
+    const subtotal = item.qty * item.price;
+    const discountValue = item.discountValue || (subtotal * discountPercentage) / 100;
+    const total = subtotal - discountValue;
 
-  const subtotal = orderItems.reduce((sum: number, item: any) => sum + item.total, 0);
-  const discount = order.totals?.discountTotal || 0;
-  const grandTotal = order.totals?.grandTotal || subtotal - discount;
+    return {
+      ...item,
+      discountPercentage: discountPercentage,
+      discountValue: discountValue,
+      total: total,
+      productName: item.productName || item.productId?.name || `Product ID: ${item.productId}` || 'Unknown Product'
+    };
+  }) || [];
+
+  // Calculate subtotal (before discount)
+  const subtotal = orderItems.reduce((sum: number, item: any) => sum + (item.qty * item.price), 0);
+  // Calculate total discount from all items
+  const totalDiscount = orderItems.reduce((sum: number, item: any) => sum + (item.discountValue || 0), 0);
+  // Calculate grand total (subtotal - discount)
+  const grandTotal = order.totals?.grandTotal || (subtotal - totalDiscount);
   const amountReceived = order.totals?.amountReceived || 0;
   const advanceUsed = order.totals?.advanceUsed || 0;
   const totalPaid = amountReceived + advanceUsed;
@@ -124,11 +159,13 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
         orderId: order.orderId || order._id,
         createdAt: order.createdAt,
         status: order.status,
+        customerId: order.customer?.id,
         customer: {
           name: order.customer?.name || (order.customer?.id?.firstName && order.customer?.id?.lastName ? 
             `${order.customer.id.firstName} ${order.customer.id.lastName}` : 'N/A'),
           phone: order.customer?.phone || order.customer?.id?.phone || 'N/A',
           email: order.customer?.id?.email || 'N/A',
+          balance: order.customer?.id?.balance,
           address: (() => {
             const currentAddress = order.customer?.id?.currentAddress;
             if (!currentAddress) return 'N/A';
@@ -152,7 +189,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
         items: orderItems,
         totals: {
           subtotal,
-          discount,
+          discountTotal: totalDiscount,
           grandTotal,
           amountReceived,
           advanceUsed,
@@ -165,9 +202,12 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
         },
       };
 
+      console.log('📄 Order data:', orderData);
+
       console.log('📄 Filling Excel template with order data...');
       
       // Define cell mappings for this order - maps data to specific Excel cells
+      const previousRemainingBalance = orderData.customer?.balance + orderData.totals.grandTotal;
       const cellMappings: { [key: string]: any } = {
         // Header information
         'A1': `INVOICE #${orderData.orderId}`, // Invoice title with order ID in A1
@@ -177,13 +217,14 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
         'F5': orderData.createdAt, // Order creation date in F5
         
         // Payment summary at bottom of template
-        'G43': orderData.totals.subtotal, // Subtotal amount in G43
-        // 'G45': customer due, // Previous remaining balance (commented out)
-        'G46': orderData.totals.grandTotal, // Grand total amount in G46
+        'F43': orderData.totals.discountTotal, // Discount amount in F43
+        'G43': orderData.totals.grandTotal, // Subtotal amount in G43
+        'G45': previousRemainingBalance,// Previous remaining balance (commented out)
+        'G46': orderData.totals.grandTotal - previousRemainingBalance, // Grand total amount in G46
       };
       
       // Loop through order items to fill them in the Excel template
-      // Items start from row 8 (A8, B8, C8, D8, G8) and continue down
+      // Items start from row 8 (A8, B8, C8, D8, E8, F8, G8) and continue down
       orderData.items.forEach((item: any, index: number) => {
         const rowNumber = index + 8; // Calculate Excel row number (8, 9, 10, etc.)
         
@@ -192,8 +233,8 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
         cellMappings[`B${rowNumber}`] = item.productName; // Product name in column B
         cellMappings[`C${rowNumber}`] = item.qty; // Quantity in column C
         cellMappings[`D${rowNumber}`] = item.price; // Price per unit in column D
-        // cellMappings[`E${rowNumber}`] = item.%; // Percentage discount (commented out)
-        // cellMappings[`F${rowNumber}`] = item.dixcount; // Number discount (commented out)
+        cellMappings[`E${rowNumber}`] = item.discountPercentage || 0; // Percentage discount in column E
+        cellMappings[`F${rowNumber}`] = item.discountValue || 0; // Discount value in column F
         cellMappings[`G${rowNumber}`] = item.total; // Total amount in column G
       });
       
@@ -361,8 +402,8 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
                   <Text>PKR {subtotal.toLocaleString()}</Text>
                 </div>
                 <div className="flex justify-between">
-                  <Text>Discount:</Text>
-                  <Text>PKR {discount.toLocaleString()}</Text>
+                  <Text>Total Discount:</Text>
+                  <Text className="text-red-600">-PKR {totalDiscount.toLocaleString()}</Text>
                 </div>
                 <div className="flex justify-between text-lg font-bold">
                   <Text strong>Grand Total:</Text>
