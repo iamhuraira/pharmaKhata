@@ -23,29 +23,29 @@ const ProductList = () => {
             {/* Results Counter Skeleton */}
             <Skeleton height={20} className="w-48" />
             
-            {/* Products Grid Skeleton - Mobile Optimized */}
-            <div className="grid grid-cols-1 gap-4">
-                {Array.from({ length: 4 }).map((_, index) => (
+            {/* Products Grid Skeleton - Desktop Optimized */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
+                {Array.from({ length: 8 }).map((_, index) => (
                     <div
                         key={index}
-                        className="bg-white rounded-xl shadow-lg p-3 border-0 min-h-[160px]"
+                        className="bg-white rounded-xl shadow-lg p-6 border border-gray-100 min-h-[280px]"
                     >
                         {/* Header Skeleton */}
-                        <div className="pr-16">
-                            <Skeleton height={20} className="mb-1" />
-                            <div className="mb-1">
-                                <Skeleton height={20} className="w-20" />
+                        <div className="pr-20">
+                            <Skeleton height={24} className="mb-3" />
+                            <div className="mb-3">
+                                <Skeleton height={24} className="w-24" />
                             </div>
-                            <Skeleton count={1} className="mb-2" />
+                            <Skeleton count={2} className="mb-3" />
                         </div>
                         
                         {/* Footer Skeleton */}
-                        <div className="mt-auto pt-2 border-t border-gray-200/50 bg-gradient-to-t from-gray-50/50 to-transparent">
-                            <div className="flex items-center justify-between mb-2">
-                                <Skeleton height={20} className="w-16" />
-                                <Skeleton height={20} className="w-12" />
+                        <div className="mt-auto pt-4 border-t border-gray-200/50 bg-gradient-to-t from-gray-50/50 to-transparent">
+                            <div className="flex items-center justify-between mb-4">
+                                <Skeleton height={24} className="w-20" />
+                                <Skeleton height={24} className="w-16" />
                             </div>
-                            <Skeleton height={32} className="w-full" />
+                            <Skeleton height={48} className="w-full" />
                         </div>
                     </div>
                 ))}
@@ -68,7 +68,9 @@ const ProductList = () => {
     );
 
     // Get unique categories for filter dropdown
-    const categories = Array.from(new Set(products.map(product => product.categoryId.name))).sort();
+    const categories = Array.from(new Set(products.map(product => 
+      typeof product.categoryId === 'object' ? product.categoryId?.name || 'Uncategorized' : 'Uncategorized'
+    ))).sort();
 
     const filteredProducts = products.filter(product => {
         const matchesSearch = searchQuery === '' || (
@@ -77,7 +79,8 @@ const ProductList = () => {
             product.urduDescription?.includes(searchQuery) // Urdu doesn't need lowercase
         );
         
-        const matchesCategory = selectedCategory === 'all' || product.categoryId.name === selectedCategory;
+        const matchesCategory = selectedCategory === 'all' || 
+          (typeof product.categoryId === 'object' ? product.categoryId?.name : product.categoryId) === selectedCategory;
         
         return matchesSearch && matchesCategory;
     });
@@ -85,7 +88,7 @@ const ProductList = () => {
     return (
         <div className="space-y-6">
             {/* Search and Filter Controls */}
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col lg:flex-row gap-4">
                 {/* Search Input */}
                 <div className="flex-1">
                     <Input
@@ -99,7 +102,7 @@ const ProductList = () => {
                 </div>
                 
                 {/* Category Filter */}
-                <div className="w-full sm:w-48">
+                <div className="w-full lg:w-64">
                     <Select
                         size="large"
                         placeholder="Filter by category"
@@ -116,16 +119,22 @@ const ProductList = () => {
             </div>
 
             {/* Results Counter */}
-            <div className="text-sm text-gray-600">
-                Showing {filteredProducts.length} of {products.length} products
-                {selectedCategory !== 'all' && ` in "${selectedCategory}" category`}
-                {searchQuery && ` matching "${searchQuery}"`}
+            <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-600">
+                    Showing <span className="font-semibold text-gray-900">{filteredProducts.length}</span> of <span className="font-semibold text-gray-900">{products.length}</span> products
+                    {selectedCategory !== 'all' && ` in "${selectedCategory}" category`}
+                    {searchQuery && ` matching "${searchQuery}"`}
+                </div>
+                <div className="text-xs text-gray-500">
+                    Last updated: {new Date().toLocaleTimeString()}
+                </div>
             </div>
 
-            {/* Products Grid - Mobile Optimized */}
+            {/* Products Grid - Desktop Optimized */}
             {filteredProducts.length === 0 ? (
-                <div className="text-center py-8">
-                    <div className="text-gray-500 text-lg mb-2">
+                <div className="text-center py-12">
+                    <div className="text-gray-400 text-6xl mb-4">📦</div>
+                    <div className="text-gray-500 text-xl mb-2">
                         {searchQuery || selectedCategory !== 'all' 
                             ? 'No products found matching your criteria.'
                             : 'No products available.'
@@ -136,10 +145,10 @@ const ProductList = () => {
                     </div>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 gap-4">
-                    {filteredProducts.map((product: IProduct) => (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
+                    {filteredProducts.map((product: IProduct, index: number) => (
                         <ProductCard
-                            key={product._id.toString()}
+                            key={product._id?.toString() || `product-${index}`}
                             product={product}
                         />
                     ))}

@@ -36,6 +36,9 @@ export interface IUser {
   createdAt: string;
   updatedAt: string;
   profilePicture?: string;
+  balance?: number; // Customer balance field
+  deletedAt?: string | null; // Soft delete timestamp
+  deletedBy?: string | null; // Who deactivated the customer
 }
 
 export interface IUserDoc extends IUser, Document {

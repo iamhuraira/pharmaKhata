@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
     const signOptions: SignOptions = { expiresIn: env.JWT_EXPIRES_IN as any };
     const token = jwt.sign(
       { 
-        userId: user._id, 
+        id: user._id, 
         role: user.role 
       },
       env.JWT_SECRET_KEY as string,
@@ -98,9 +98,17 @@ export async function POST(request: NextRequest) {
       token: token
     }, { status: 200 });
 
-    // Set token in cookie
+    // Set token in both HTTP-only (for security) and JavaScript-accessible cookies
     response.cookies.set('token', token, {
-      httpOnly: true,
+      httpOnly: true, // Secure HTTP-only cookie for API calls
+      path: '/',
+      maxAge: 60 * 60 * 24, // 24 hours
+      sameSite: 'lax'
+    });
+    
+    // Also set a JavaScript-accessible token for frontend use
+    response.cookies.set('token_js', token, {
+      httpOnly: false, // Allow JavaScript to read this token
       path: '/',
       maxAge: 60 * 60 * 24, // 24 hours
       sameSite: 'lax'

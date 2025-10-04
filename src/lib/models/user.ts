@@ -14,17 +14,26 @@ const AddressSchema = new Schema({
 
   city: {
     type: String,
-    required: true,
+    required: false,
+    default: '',
   },
 
   state: {
     type: String,
-    required: true,
+    required: false,
+    default: '',
+  },
+
+  zip: {
+    type: String,
+    required: false,
+    default: '',
   },
 
   country: {
     type: String,
-    required: true,
+    required: false,
+    default: 'Pakistan',
   },
 });
 
@@ -63,6 +72,11 @@ const userSchema = new Schema(
 
     phone: {
       type: String,
+    },
+
+    email: {
+      type: String,
+      required: false,
     },
 
     currentAddress: {
@@ -106,6 +120,26 @@ const userSchema = new Schema(
       type: String,
       default: null,
     },
+
+    // Customer balance field
+    balance: {
+      type: Number,
+      default: 0,
+      required: false,
+    },
+
+    // Soft delete fields
+    deletedAt: {
+      type: Date,
+      required: false,
+      default: null,
+    },
+
+    deletedBy: {
+      type: String,
+      required: false,
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -115,7 +149,9 @@ const userSchema = new Schema(
 // Prevent duplicate model compilation
 let User: mongoose.Model<IUserDoc>;
 try {
-  User = mongoose.model<IUserDoc>(MODELS.USERS);
+  // Delete the existing model to force recompilation with new schema
+  mongoose.deleteModel(MODELS.USERS);
+  User = mongoose.model<IUserDoc>(MODELS.USERS, userSchema);
 } catch {
   User = mongoose.model<IUserDoc>(MODELS.USERS, userSchema);
 }

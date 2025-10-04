@@ -1,0 +1,36 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🚀 Post-build hook triggered"
+
+# Check if build was successful
+if [ $? -eq 0 ]; then
+    echo "✅ Build successful, preparing to commit..."
+    
+    # Get current branch
+    CURRENT_BRANCH=$(git branch --show-current)
+    echo "🌿 Current branch: $CURRENT_BRANCH"
+    
+    # Check if there are any changes to commit
+    if [ -n "$(git status --porcelain)" ]; then
+        echo "📝 Changes detected, committing..."
+        
+        # Add all changes
+        git add .
+        
+        # Create commit message with timestamp and branch info
+        TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+        COMMIT_MSG="build: successful build at $TIMESTAMP on $CURRENT_BRANCH"
+        
+        # Commit with the generated message
+        git commit -m "$COMMIT_MSG"
+        
+        echo "✅ Code committed successfully: $COMMIT_MSG"
+        echo "📊 Commit hash: $(git rev-parse --short HEAD)"
+    else
+        echo "ℹ️  No changes to commit"
+    fi
+else
+    echo "❌ Build failed, skipping commit"
+    exit 1
+fi

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getToken, removeToken } from './token';
+import { getToken } from './token';
 
 const api = axios.create({
   baseURL: '', // Use relative URLs for Next.js API routes
@@ -11,7 +11,7 @@ api.interceptors.request.use(
     const token = getToken();
 
     if (token) {
-      config.headers.Authorization = `bearer ${token}`;
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
@@ -30,12 +30,8 @@ api.interceptors.response.use(
       status: number;
     };
   }) => {
-    if (error?.response?.status === 401) {
-      localStorage.clear();
-      removeToken();
-      window.location.href = '/sign-in';
-    }
-
+    // Don't automatically redirect on 401 - let the components handle it
+    // This prevents infinite loops and allows proper error handling
     return Promise.reject(error);
   },
 );
