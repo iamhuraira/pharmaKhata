@@ -18,6 +18,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
   order
 }) => {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [isGeneratingInvoice, setIsGeneratingInvoice] = useState(false);
 
   if (!order) return null;
 
@@ -269,7 +270,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
           loading={isGeneratingPDF}
           type="primary"
         >
-          {isGeneratingPDF ? 'Filling Template...' : 'Fill Template'}
+          {isGeneratingPDF ? 'Downloading Pdf Invoice...' : 'Download Pdf Invoice'}
         </Button>,
         <Button key="cancel" onClick={onCancel}>
           Close

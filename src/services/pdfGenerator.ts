@@ -1,4 +1,6 @@
 import * as ExcelJS from 'exceljs';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export interface OrderData {
   orderId: string;
@@ -108,7 +110,7 @@ class PDFGenerator {
       // Create download link
       const link = document.createElement('a');
       link.href = url;
-      link.download = 'Filled_Template.xlsx';
+      link.download = `${data.customerName}_${data.orderIdß}.xlsx`;
       document.body.appendChild(link);
       link.click();
       
@@ -155,73 +157,73 @@ class PDFGenerator {
   /**
    * Download original template using ExcelJS (preserves styling)
    */
-  async downloadOriginalTemplate(): Promise<void> {
-    console.log('🚀 Starting original template download with ExcelJS...');
+//   async downloadOriginalTemplate(): Promise<void> {
+//     console.log('🚀 Starting original template download with ExcelJS...');
     
-    try {
-      // Step 1: Load the Excel template
-      console.log('📄 Step 1: Loading Excel template...');
-      const templateResponse = await fetch('/excelTemplate/templete.xlsx');
+//     try {
+//       // Step 1: Load the Excel template
+//       console.log('📄 Step 1: Loading Excel template...');
+//       const templateResponse = await fetch('/excelTemplate/templete.xlsx');
       
-      if (!templateResponse.ok) {
-        throw new Error(`Failed to fetch template: ${templateResponse.status} ${templateResponse.statusText}`);
-      }
+//       if (!templateResponse.ok) {
+//         throw new Error(`Failed to fetch template: ${templateResponse.status} ${templateResponse.statusText}`);
+//       }
       
-      const templateBuffer = await templateResponse.arrayBuffer();
-      console.log('✅ Template loaded successfully, size:', templateBuffer.byteLength, 'bytes');
+//       const templateBuffer = await templateResponse.arrayBuffer();
+//       console.log('✅ Template loaded successfully, size:', templateBuffer.byteLength, 'bytes');
       
-      // Step 2: Parse with ExcelJS
-      console.log('📊 Step 2: Parsing Excel file with ExcelJS...');
-      const workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.load(templateBuffer);
-      console.log('✅ Excel workbook parsed with ExcelJS, worksheets:', workbook.worksheets.length);
+//       // Step 2: Parse with ExcelJS
+//       console.log('📊 Step 2: Parsing Excel file with ExcelJS...');
+//       const workbook = new ExcelJS.Workbook();
+//       await workbook.xlsx.load(templateBuffer);
+//       console.log('✅ Excel workbook parsed with ExcelJS, worksheets:', workbook.worksheets.length);
       
-      // Step 3: Get the first worksheet
-      const worksheet = workbook.worksheets[0];
-      if (!worksheet) {
-        throw new Error('No worksheet found in template');
-      }
-      console.log('📋 Using worksheet:', worksheet.name);
+//       // Step 3: Get the first worksheet
+//       const worksheet = workbook.worksheets[0];
+//       if (!worksheet) {
+//         throw new Error('No worksheet found in template');
+//       }
+//       console.log('📋 Using worksheet:', worksheet.name);
       
-      // Step 4: Log some cell information
-      console.log('📊 Sample cells from template:');
-      const sampleCells = ['A1', 'A2', 'A3', 'B1', 'B2', 'C1', 'J1', 'J5'];
-      sampleCells.forEach(cellRef => {
-        const cell = worksheet.getCell(cellRef);
-        if (cell.value) {
-          console.log(`   ${cellRef}: '${cell.value}' (type: ${typeof cell.value})`);
-        } else {
-          console.log(`   ${cellRef}: [empty]`);
-        }
-      });
+//       // Step 4: Log some cell information
+//       console.log('📊 Sample cells from template:');
+//       const sampleCells = ['A1', 'A2', 'A3', 'B1', 'B2', 'C1', 'J1', 'J5'];
+//       sampleCells.forEach(cellRef => {
+//         const cell = worksheet.getCell(cellRef);
+//         if (cell.value) {
+//           console.log(`   ${cellRef}: '${cell.value}' (type: ${typeof cell.value})`);
+//         } else {
+//           console.log(`   ${cellRef}: [empty]`);
+//         }
+//       });
       
-      // Step 5: Download the original template
-      console.log('📄 Step 3: Downloading original template with ExcelJS...');
-      const buffer = await workbook.xlsx.writeBuffer();
+//       // Step 5: Download the original template
+//       console.log('📄 Step 3: Downloading original template with ExcelJS...');
+//       const buffer = await workbook.xlsx.writeBuffer();
       
-      // Create blob and download
-      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const url = window.URL.createObjectURL(blob);
+//       // Create blob and download
+//       const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+//       const url = window.URL.createObjectURL(blob);
       
-      // Create download link
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'Original_Template.xlsx';
-      document.body.appendChild(link);
-      link.click();
+//       // Create download link
+//       const link = document.createElement('a');
+//       link.href = url;
+//       link.download = 'Original_Template.xlsx';
+//       document.body.appendChild(link);
+//       link.click();
       
-      // Cleanup
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+//       // Cleanup
+//       document.body.removeChild(link);
+//       window.URL.revokeObjectURL(url);
       
-      console.log('✅ Excel file downloaded successfully with ExcelJS!');
-      console.log('🎉 Original template download completed successfully!');
+//       console.log('✅ Excel file downloaded successfully with ExcelJS!');
+//       console.log('🎉 Original template download completed successfully!');
       
-    } catch (error) {
-      console.error('❌ Error downloading original template with ExcelJS:', error);
-      throw error;
-    }
-  }
+//     } catch (error) {
+//       console.error('❌ Error downloading original template with ExcelJS:', error);
+//       throw error;
+//     }
+//   }
 
   /**
    * Read and log Excel template file (for debugging)
