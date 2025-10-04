@@ -155,7 +155,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
     try {
       // Prepare order data for Excel generation
       console.log('📋 Preparing order data for Excel generation...');
-      const orderData = {
+      const orderData: any = {
         orderId: order.orderId || order._id,
         createdAt: order.createdAt,
         status: order.status,

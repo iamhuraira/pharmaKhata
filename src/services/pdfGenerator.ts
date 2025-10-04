@@ -90,7 +90,7 @@ class PDFGenerator {
       
       try {
         // Fill data directly into the worksheet to preserve formatting
-        this.fillWorksheetWithExcelJS(worksheet, data, cellMappings);
+        this.fillWorksheetWithExcelJS(worksheet, cellMappings);
         console.log('✅ Template filled with data while preserving formatting');
       } catch (fillError) {
         console.error('❌ Error in fillWorksheetWithExcelJS:', fillError);
@@ -128,7 +128,7 @@ class PDFGenerator {
   /**
    * Fill worksheet with data using ExcelJS (preserves formatting)
    */
-  private fillWorksheetWithExcelJS(worksheet: ExcelJS.Worksheet, data: any, cellMappings: { [cellRef: string]: any }): void {
+  private fillWorksheetWithExcelJS(worksheet: ExcelJS.Worksheet, cellMappings: { [cellRef: string]: any }): void {
     console.log('🔄 Filling worksheet with ExcelJS...');
     
     let filledCells = 0;
