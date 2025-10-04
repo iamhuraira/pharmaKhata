@@ -1,6 +1,4 @@
 import * as ExcelJS from 'exceljs';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 
 export interface OrderData {
   orderId: string;

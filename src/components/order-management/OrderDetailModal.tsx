@@ -18,7 +18,6 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
   order
 }) => {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
-  const [isGeneratingInvoice, setIsGeneratingInvoice] = useState(false);
 
   if (!order) return null;
 
