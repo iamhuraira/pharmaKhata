@@ -2,19 +2,13 @@ import mongoose from "mongoose";
 import { env } from "@/config/envConfig";
 
 // Global promise to ensure single connection
-let cached = global.mongoose;
+let cached = (global as any).mongoose;
 
 if (!cached) {
-    cached = global.mongoose = { conn: null, promise: null };
+    cached = (global as any).mongoose = { conn: null, promise: null };
 }
 
 export const connectDB = async () => {
-    // Check if already connected
-    if (mongoose.connection.readyState === 1) {
-        console.log('✅ Database already connected');
-        return;
-    }
-
     if (!env.MONGO_URL) {
         throw new Error("MONGO_URL is not defined in environment variables");
     }
@@ -22,6 +16,13 @@ export const connectDB = async () => {
     // Return existing connection if available
     if (cached.conn) {
         console.log('✅ Using cached database connection');
+        return cached.conn;
+    }
+
+    // Check if already connected
+    if (mongoose.connection.readyState === 1) {
+        console.log('✅ Database already connected');
+        cached.conn = mongoose.connection;
         return cached.conn;
     }
 
@@ -37,12 +38,12 @@ export const connectDB = async () => {
             connectTimeoutMS: 10000, // Reduced for Vercel
             family: 4, // Use IPv4, skip trying IPv6
             retryWrites: true,
-            w: 'majority'
+            w: 'majority' as const
         };
 
-        cached.promise = mongoose.connect(env.MONGO_URL, opts).then((mongoose) => {
+        cached.promise = mongoose.connect(env.MONGO_URL, opts).then((connection) => {
             console.log('✅ Database connected successfully');
-            return mongoose;
+            return connection;
         }).catch((error) => {
             console.error('❌ Database connection failed:', error);
             throw error;
@@ -51,8 +52,28 @@ export const connectDB = async () => {
 
     try {
         cached.conn = await cached.promise;
+        
+        // Set up connection event handlers
+        mongoose.connection.on('error', (error) => {
+            console.error('❌ Database connection error:', error);
+            cached.conn = null;
+            cached.promise = null;
+        });
+        
+        mongoose.connection.on('disconnected', () => {
+            console.warn('⚠️ Database disconnected');
+            cached.conn = null;
+            cached.promise = null;
+        });
+        
+        mongoose.connection.on('reconnected', () => {
+            console.log('🔄 Database reconnected');
+            cached.conn = mongoose.connection;
+        });
+        
     } catch (e) {
         cached.promise = null;
+        cached.conn = null;
         throw e;
     }
 
