@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { env } from '@/config/envConfig';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Test database connection
     let dbStatus = 'disconnected';
@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
 }
 
 // Handle OPTIONS request for CORS
-export async function OPTIONS(request: NextRequest) {
+export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
     headers: {
