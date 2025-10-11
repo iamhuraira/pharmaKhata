@@ -13,6 +13,8 @@ export const connectDB = async () => {
         throw new Error("MONGO_URL is not defined in environment variables");
     }
 
+    console.log('🔍 MONGO_URL:', env.MONGO_URL.replace(/\/\/.*@/, '//***:***@')); // Hide credentials in logs
+
     // Return existing connection if available
     if (cached.conn) {
         console.log('✅ Using cached database connection');
