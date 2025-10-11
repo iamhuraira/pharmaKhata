@@ -1,6 +1,13 @@
 import mongoose from "mongoose";
 import { env } from "@/config/envConfig";
 
+// Global promise to ensure single connection
+let cached = global.mongoose;
+
+if (!cached) {
+    cached = global.mongoose = { conn: null, promise: null };
+}
+
 export const connectDB = async () => {
     // Check if already connected
     if (mongoose.connection.readyState === 1) {
@@ -12,53 +19,42 @@ export const connectDB = async () => {
         throw new Error("MONGO_URL is not defined in environment variables");
     }
 
-    try {
-        console.log('🔌 Connecting to MongoDB...');
+    // Return existing connection if available
+    if (cached.conn) {
+        console.log('✅ Using cached database connection');
+        return cached.conn;
+    }
+
+    // Create new connection if no promise exists
+    if (!cached.promise) {
+        console.log('🔌 Creating new MongoDB connection...');
         
-        // Improved connection options with longer timeouts and better error handling
-        await mongoose.connect(env.MONGO_URL, {
+        const opts = {
+            bufferCommands: false, // Disable mongoose buffering
             maxPoolSize: 10,
-            serverSelectionTimeoutMS: 30000, // Increased from 5000ms to 30000ms
+            serverSelectionTimeoutMS: 5000, // Reduced for Vercel
             socketTimeoutMS: 45000,
-            connectTimeoutMS: 30000, // Added connection timeout
+            connectTimeoutMS: 10000, // Reduced for Vercel
             family: 4, // Use IPv4, skip trying IPv6
             retryWrites: true,
             w: 'majority'
-        });
+        };
 
-        console.log('✅ Database connected successfully');
-        
-        // Set up connection event handlers
-        mongoose.connection.on('error', (error) => {
-            console.error('❌ Database connection error:', error);
+        cached.promise = mongoose.connect(env.MONGO_URL, opts).then((mongoose) => {
+            console.log('✅ Database connected successfully');
+            return mongoose;
+        }).catch((error) => {
+            console.error('❌ Database connection failed:', error);
+            throw error;
         });
-        
-        mongoose.connection.on('disconnected', () => {
-            console.warn('⚠️ Database disconnected');
-        });
-        
-        mongoose.connection.on('reconnected', () => {
-            console.log('🔄 Database reconnected');
-        });
-        
-    } catch (error) {
-        console.error('❌ Database connection failed:', error);
-        
-        // Provide more helpful error messages
-        if (error instanceof Error) {
-            if (error.message.includes('ENOTFOUND')) {
-                console.error('💡 Possible solutions:');
-                console.error('   1. Check your internet connection');
-                console.error('   2. Verify MongoDB Atlas cluster is running');
-                console.error('   3. Check IP whitelist in MongoDB Atlas');
-                console.error('   4. Verify the connection string is correct');
-            } else if (error.message.includes('authentication')) {
-                console.error('💡 Authentication failed - check username/password in connection string');
-            } else if (error.message.includes('timeout')) {
-                console.error('💡 Connection timeout - cluster might be paused or slow');
-            }
-        }
-        
-        throw error;
     }
+
+    try {
+        cached.conn = await cached.promise;
+    } catch (e) {
+        cached.promise = null;
+        throw e;
+    }
+
+    return cached.conn;
 };
