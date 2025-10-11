@@ -32,7 +32,22 @@ export interface OrderData {
 }
 
 class PDFGenerator {
-  private customCellMappings: { [cellRef: string]: any } = {};
+  private customCellMappings: { [cellRef: string]: any } = {}
+  private pageLayoutSettings: any = {
+    fitToPage: true,
+    fitToWidth: 1,
+    fitToHeight: 1,
+    orientation: 'portrait',
+    paperSize: 9, // A4 paper size
+    margins: {
+      left: 0.5,
+      right: 0.5,
+      top: 0.5,
+      bottom: 0.5,
+      header: 0.3,
+      footer: 0.3
+    }
+  };
 
   /**
    * Set custom cell mappings for Excel generation
@@ -51,6 +66,21 @@ class PDFGenerator {
   }
 
   /**
+   * Set page layout settings for single page output
+   */
+  setPageLayoutSettings(settings: any): void {
+    this.pageLayoutSettings = { ...this.pageLayoutSettings, ...settings };
+    console.log('📄 Updated page layout settings:', this.pageLayoutSettings);
+  }
+
+  /**
+   * Get current page layout settings
+   */
+  getPageLayoutSettings(): any {
+    return { ...this.pageLayoutSettings };
+  }
+
+  /**
    * Fill Excel template with custom data and cell mappings using ExcelJS
    */
   async fillExcelTemplate(data: any, cellMappings: { [cellRef: string]: any }): Promise<void> {
@@ -61,7 +91,7 @@ class PDFGenerator {
     try {
       // Step 1: Load the Excel template
       console.log('📄 Step 1: Loading Excel template...');
-      const templateResponse = await fetch('/excelTemplate/templete.xlsx');
+      const templateResponse = await fetch('/excelTemplate/templete.xltx');
       
       if (!templateResponse.ok) {
         throw new Error(`Failed to fetch template: ${templateResponse.status} ${templateResponse.statusText}`);
@@ -83,8 +113,13 @@ class PDFGenerator {
       }
       console.log('📋 Using worksheet:', worksheet.name);
       
-      // Step 4: Fill the template with provided data (preserving formatting)
-      console.log('✏️ Step 3: Filling template with data (preserving formatting)...');
+      // Step 4: Configure page layout for single page
+      console.log('📄 Step 3: Configuring page layout for single page...');
+      worksheet.pageSetup = this.pageLayoutSettings;
+      console.log('✅ Page layout configured for single page');
+
+      // Step 5: Fill the template with provided data (preserving formatting)
+      console.log('✏️ Step 4: Filling template with data (preserving formatting)...');
       console.log('📊 Data object:', data);
       console.log('📍 Cell mappings:', cellMappings);
       
@@ -161,7 +196,7 @@ class PDFGenerator {
 //     try {
 //       // Step 1: Load the Excel template
 //       console.log('📄 Step 1: Loading Excel template...');
-//       const templateResponse = await fetch('/excelTemplate/templete.xlsx');
+//       const templateResponse = await fetch('/excelTemplate/templete.xltx');
       
 //       if (!templateResponse.ok) {
 //         throw new Error(`Failed to fetch template: ${templateResponse.status} ${templateResponse.statusText}`);
@@ -232,7 +267,7 @@ class PDFGenerator {
     try {
       // Step 1: Load the Excel template
       console.log('📄 Step 1: Loading Excel template...');
-      const templateResponse = await fetch('/excelTemplate/templete.xlsx');
+      const templateResponse = await fetch('/excelTemplate/templete.xltx');
       
       if (!templateResponse.ok) {
         throw new Error(`Failed to fetch template: ${templateResponse.status} ${templateResponse.statusText}`);
