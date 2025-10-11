@@ -13,7 +13,8 @@
     }
   },
   "env": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "MONGO_URL": "mongodb+srv://iamhuraira429:o0RO84l6TjbgQB5S@hurii.8wtzhom.mongodb.net/pharmaKhata?retryWrites=true&w=majority&appName=hurii"
   },
   "headers": [
     {
