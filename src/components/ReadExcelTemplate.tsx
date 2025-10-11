@@ -37,7 +37,7 @@ const ReadExcelTemplate: React.FC = () => {
       <div style={{ marginTop: '16px', padding: '12px', backgroundColor: '#f5f5f5', borderRadius: '6px' }}>
         <p><strong>What this will do:</strong></p>
         <ul>
-          <li>Load the Excel template from <code>/public/excelTemplate/templete.xlsx</code></li>
+          <li>Load the Excel template from <code>/public/excelTemplate/templete.xltx</code></li>
           <li>Parse the Excel file structure</li>
           <li>Log the number of rows and columns</li>
           <li>Show the first 10 rows with their column structure</li>

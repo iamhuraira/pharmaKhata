@@ -63,7 +63,7 @@ const CellMappingDiagram: React.FC = () => {
       <div style={{ marginTop: '20px', padding: '16px', backgroundColor: '#f5f5f5', borderRadius: '6px' }}>
         <Title level={5}>How It Works:</Title>
         <ol>
-          <li><strong>Load Template:</strong> Your Excel template is loaded from <code>/public/excelTemplate/templete.xlsx</code></li>
+          <li><strong>Load Template:</strong> Your Excel template is loaded from <code>/public/excelTemplate/templete.xltx</code></li>
           <li><strong>Fill Cells:</strong> Order data is placed in specific cells (J1, J5, J10, etc.)</li>
           <li><strong>Add Items:</strong> Order items are added to rows starting from A15</li>
           <li><strong>Download:</strong> The filled Excel file is downloaded as <code>{'Order_{OrderID}_{CustomerName}.xlsx'}</code></li>
