@@ -17,19 +17,25 @@ if (envPath && fs.existsSync(envPath)) {
 
 export const env = cleanEnv(process.env, {
   NODE_ENV: str({ devDefault: testOnly('test'), choices: ['development', 'production', 'production.local', 'test'] }),
-    HOST: host({ devDefault: 'localhost', default: 'localhost' }),
+  HOST: host({ devDefault: 'localhost', default: '0.0.0.0' }),
   PORT: port({ devDefault: 3000, default: 3000 }),
-  CORS_ORIGIN: str({ devDefault: 'http://localhost:3001;http://localhost:3000', default: 'http://localhost:3001;http://localhost:3000' }),
-  COMMON_RATE_LIMIT_MAX_REQUESTS: num({ devDefault: 1000, default: 1000 }),
-  COMMON_RATE_LIMIT_WINDOW_MS: num({ devDefault: 1000, default: 1000 }),
-  MONGO_URL: str({ 
-    devDefault: process.env.MONGO_URL || 'mongodb://localhost:27017/pharmaKhata', 
-    default: 'mongodb+srv://iamhuraira429:o0RO84l6TjbgQB5S@hurii.8wtzhom.mongodb.net/pharmaKhata?retryWrites=true&w=majority&appName=hurii' 
+  CORS_ORIGIN: str({ 
+    devDefault: 'http://localhost:3001;http://localhost:3000', 
+    default: process.env.CORS_ORIGIN || 'https://your-domain.com' 
   }),
-  JWT_SECRET_KEY: str({ devDefault: 'mySecret', default: 'mySecret' }),
-  JWT_EXPIRES_IN: str({ devDefault: '1d', default: '1d' }),
-  BCRYPT_SALT_ROUNDS: num({ devDefault: 10, default: 10 }),
-
+  COMMON_RATE_LIMIT_MAX_REQUESTS: num({ devDefault: 1000, default: 100 }),
+  COMMON_RATE_LIMIT_WINDOW_MS: num({ devDefault: 1000, default: 60000 }),
+  MONGO_URL: str({ 
+    devDefault: 'mongodb://localhost:27017/pharmaKhata',
+    default: process.env.MONGO_URL || 'mongodb://localhost:27017/pharmaKhata'
+  }),
+  JWT_SECRET_KEY: str({ 
+    devDefault: 'dev_jwt_secret_key_pharmakhata_2024', 
+    default: process.env.JWT_SECRET_KEY || 'your_very_strong_jwt_secret_key_for_production_2024' 
+  }),
+  JWT_EXPIRES_IN: str({ devDefault: '1d', default: '24h' }),
+  BCRYPT_SALT_ROUNDS: num({ devDefault: 10, default: 12 }),
+  // default: 'mongodb+srv://iamhuraira429:o0RO84l6TjbgQB5S@hurii.8wtzhom.mongodb.net/pharmaKhata?retryWrites=true&w=majority&appName=hurii' 
   // cloudinary
   // CLOUDINARY_CLOUD_NAME: str({ devDefault: testOnly(''), desc: 'Cloudinary cloud name' }),
   // CLOUDINARY_API_KEY: str({ devDefault: testOnly(''), desc: 'Cloudinary api key' }),

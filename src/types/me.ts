@@ -127,7 +127,27 @@ export type TEnableTFAService = () => Promise<IAPIResponse>;
 export type TDisableTFAService = () => Promise<IAPIResponse>;
 
 export type ICustomer = IUser;
-export type ICreateNewCustomer = Pick<ICustomer, 'firstName' | 'lastName' | 'phone'>;
+
+export type IAdvancePayment = {
+  amount: number;
+  method: string;
+  reference: string;
+  date: string;
+  note?: string;
+};
+
+export type IDebtPayment = {
+  amount: number;
+  method: string;
+  reference: string;
+  date: string;
+  note?: string;
+};
+
+export type ICreateNewCustomer = Pick<ICustomer, 'firstName' | 'lastName' | 'phone'> & {
+  advance?: IAdvancePayment;
+  debt?: IDebtPayment;
+};
 export type TCreateCustomerService = (payload: ICreateNewCustomer) => Promise<IAPISuccess>;
 export type IGetAllCustomerResponse = {
   customers: ICustomer[];

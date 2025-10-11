@@ -43,6 +43,19 @@ const customerSchema = Yup.object().shape({
     }
     return Yup.object().optional();
   }),
+  hasDebt: Yup.boolean(),
+  debt: Yup.object().when('hasDebt', ([hasDebt]) => {
+    if (hasDebt) {
+      return Yup.object().shape({
+        amount: Yup.number().required('Amount is required').positive('Amount must be positive'),
+        method: Yup.string().required('Method is required'),
+        reference: Yup.string().required('Reference is required'),
+        date: Yup.string().required('Date is required'),
+        note: Yup.string().optional(),
+      });
+    }
+    return Yup.object().optional();
+  }),
 });
 
 const CustomerManagement = () => {
@@ -124,6 +137,14 @@ const CustomerManagement = () => {
       date: dayjs().format('YYYY-MM-DDTHH:mm:ssZ'),
       note: '',
     },
+    hasDebt: false,
+    debt: {
+      amount: 0,
+      method: 'on_account' as const,
+      reference: '',
+      date: dayjs().format('YYYY-MM-DDTHH:mm:ssZ'),
+      note: '',
+    },
   };
 
   const handleSubmit = async (values: typeof initialValues) => {
@@ -136,6 +157,7 @@ const CustomerManagement = () => {
       email: values.email,
       address: values.address,
       advance: values.hasAdvance ? values.advance : undefined,
+      debt: values.hasDebt ? values.debt : undefined,
     };
     
     console.log('🔍 Frontend - Form values:', values);
@@ -681,6 +703,107 @@ const CustomerManagement = () => {
                               placeholder='Additional notes' 
                               rows={2}
                               className='rounded-lg border-gray-200 focus:border-orange-500 focus:ring-orange-500'
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </Field>
+                  </div>
+
+                  {/* Debt Section */}
+                  <div className="bg-gradient-to-r from-red-50 to-pink-50 p-4 rounded-xl border border-red-100">
+                    <h3 className="text-lg font-semibold text-red-800 mb-3 flex items-center">
+                      <DollarOutlined className="mr-2" />
+                      Initial Debt
+                    </h3>
+                    <div className='flex items-center space-x-3 mb-4'>
+                      <Field name='hasDebt'>
+                        {({ field, form }: any) => (
+                          <Switch
+                            checked={field.value}
+                            onChange={(checked) => form.setFieldValue('hasDebt', checked)}
+                            className='bg-red-500'
+                          />
+                        )}
+                      </Field>
+                      <span className='text-gray-600 text-sm'>Customer has existing debt</span>
+                    </div>
+
+                    <Field name='hasDebt'>
+                      {({ field }: any) => field.value && (
+                        <div className='space-y-3 p-4 bg-white rounded-lg border border-red-200'>
+                          <div className='grid grid-cols-2 gap-3'>
+                            <div>
+                              <label className='block text-sm font-medium mb-2 text-gray-700'>Amount *</label>
+                              <Field 
+                                name='debt.amount' 
+                                as={Input} 
+                                type='number'
+                                placeholder='Enter debt amount' 
+                                size='large'
+                                className='h-11 text-base rounded-lg border-gray-200 focus:border-red-500 focus:ring-red-500'
+                                prefix={<DollarOutlined className='text-gray-400' />}
+                              />
+                            </div>
+                            <div>
+                              <label className='block text-sm font-medium mb-2 text-gray-700'>Method *</label>
+                              <Field name='debt.method'>
+                                {({ field, form }: any) => (
+                                  <Select
+                                    value={field.value}
+                                    onChange={(value) => form.setFieldValue('debt.method', value)}
+                                    placeholder='Select method'
+                                    size='large'
+                                    className='w-full'
+                                    options={[
+                                      { value: 'on_account', label: 'On Account' },
+                                      { value: 'cash', label: 'Cash' },
+                                      { value: 'bank', label: 'Bank Transfer' },
+                                      { value: 'jazzcash', label: 'JazzCash' },
+                                      { value: 'card', label: 'Card' },
+                                      { value: 'other', label: 'Other' },
+                                    ]}
+                                  />
+                                )}
+                              </Field>
+                            </div>
+                          </div>
+                          
+                          <div className='grid grid-cols-2 gap-3'>
+                            <div>
+                              <label className='block text-sm font-medium mb-2 text-gray-700'>Reference</label>
+                              <Field 
+                                name='debt.reference' 
+                                as={Input} 
+                                placeholder='Debt reference' 
+                                size='large'
+                                className='h-11 text-base rounded-lg border-gray-200 focus:border-red-500 focus:ring-red-500'
+                              />
+                            </div>
+                            <div>
+                              <label className='block text-sm font-medium mb-2 text-gray-700'>Date</label>
+                              <Field name='debt.date'>
+                                {({ field, form }: any) => (
+                                  <DatePicker
+                                    value={field.value ? dayjs(field.value) : null}
+                                    onChange={(date) => form.setFieldValue('debt.date', date ? date.format('YYYY-MM-DDTHH:mm:ssZ') : '')}
+                                    size='large'
+                                    className='w-full'
+                                    format='YYYY-MM-DD'
+                                  />
+                                )}
+                              </Field>
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <label className='block text-sm font-medium mb-2 text-gray-700'>Note</label>
+                            <Field 
+                              name='debt.note' 
+                              as={Input.TextArea} 
+                              placeholder='Additional notes about the debt' 
+                              rows={2}
+                              className='rounded-lg border-gray-200 focus:border-red-500 focus:ring-red-500'
                             />
                           </div>
                         </div>
