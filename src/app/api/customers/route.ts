@@ -24,7 +24,8 @@ export async function POST(request: NextRequest) {
       address,
       creditLimit,
       // hasAdvance, // Not used in current implementation
-      advance
+      advance,
+      debt
     } = body;
 
     // Validate required fields
@@ -116,7 +117,9 @@ export async function POST(request: NextRequest) {
       balance: customer.balance
     });
 
-    // If advance payment, create ledger transaction and update balance
+    // Handle advance payment and debt
+    let finalBalance = 0;
+    
     if (advance && advance.amount > 0) {
       console.log(`🔍 Creating customer with advance: ${advance.amount} PKR`);
       console.log(`🔍 Initial customer balance: ${customer.balance}`);
@@ -137,15 +140,44 @@ export async function POST(request: NextRequest) {
       });
 
       await ledgerTransaction.save();
-      console.log(`🔍 Ledger transaction saved: ${ledgerTransaction._id}`);
+      console.log(`🔍 Advance ledger transaction saved: ${ledgerTransaction._id}`);
 
       // Update customer balance directly
-      const updatedBalance = await updateCustomerBalance(customer._id.toString(), advance.amount, 'advance_payment');
-      console.log(`🔍 Balance updated to: ${updatedBalance} PKR`);
+      finalBalance = await updateCustomerBalance(customer._id.toString(), advance.amount, 'advance_payment');
+      console.log(`🔍 Balance updated to: ${finalBalance} PKR`);
+    }
+    
+    if (debt && debt.amount > 0) {
+      console.log(`🔍 Creating customer with debt: ${debt.amount} PKR`);
       
-      // Use the updated balance value directly
-      const finalBalance = updatedBalance;
-      console.log(`🔍 Final balance to return: ${finalBalance}`);
+      const debtTransaction = new LedgerTransaction({
+        date: debt.date ? new Date(debt.date) : new Date(),
+        type: 'sale', // Debt is treated as a sale (customer owes)
+        method: debt.method || 'on_account',
+        description: `Initial debt from ${firstName} ${lastName}`,
+        ref: {
+          customerId: customer._id,
+          party: `${firstName} ${lastName}`,
+          txnNo: debt.reference
+        },
+        debit: debt.amount, // Debt is DEBIT (customer owes money)
+        credit: 0,          // No credit for debt
+        runningBalance: 0 // Will be calculated by middleware
+      });
+
+      await debtTransaction.save();
+      console.log(`🔍 Debt ledger transaction saved: ${debtTransaction._id}`);
+
+      // Update customer balance (debt reduces balance)
+      finalBalance = await updateCustomerBalance(customer._id.toString(), -debt.amount, 'initial_debt');
+      console.log(`🔍 Final balance after debt: ${finalBalance} PKR`);
+    }
+    
+    // If both advance and debt exist, calculate net balance
+    if (advance && advance.amount > 0 && debt && debt.amount > 0) {
+      const netAmount = advance.amount - debt.amount;
+      finalBalance = await updateCustomerBalance(customer._id.toString(), netAmount, 'advance_debt_net');
+      console.log(`🔍 Net balance (advance - debt): ${finalBalance} PKR`);
     }
 
     return NextResponse.json({
@@ -160,7 +192,7 @@ export async function POST(request: NextRequest) {
           email: email || '',
           address: currentAddress ? `${currentAddress.street}, ${currentAddress.city}, ${currentAddress.state}, ${currentAddress.country}` : '',
           currentAddress: currentAddress, // Return the structured address
-          balance: advance && advance.amount > 0 ? (advance.amount) : 0,
+          balance: finalBalance,
           creditLimit: creditLimit || 0,
           status: customer.status
         }
