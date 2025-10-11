@@ -8,3 +8,11 @@ type Window = {
   $: any;
   jQuery: any;
 };
+
+// Global mongoose cache for Vercel
+declare global {
+  var mongoose: {
+    conn: any;
+    promise: Promise<any> | null;
+  } | undefined;
+}
