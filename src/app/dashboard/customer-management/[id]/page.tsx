@@ -1,10 +1,11 @@
                                                                     'use client';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
-import { Card, Typography, Button, Avatar, Tag, Tabs, List, Statistic, Row, Col, Empty, Spin, Popconfirm, message } from 'antd';
+import { Card, Typography, Button, Avatar, Tag, Tabs, List, Statistic, Row, Col, Empty, Spin, Popconfirm, message, Modal, Input } from 'antd';
   import { UserOutlined, PhoneOutlined, EnvironmentOutlined, CalendarOutlined, DollarOutlined, PlusOutlined, MailOutlined, CreditCardOutlined, DeleteOutlined } from '@ant-design/icons';
 import CustomerPaymentModal from '@/components/customer-management/CustomerPaymentModal';
 import CustomerDeletionModal from '@/components/customer-management/CustomerDeletionModal';
+import PhoneInput from '@/components/customer-management/PhoneInput';
 import { useGetCustomerById, useGetCustomerTransactions, useRecordPayment } from '@/hooks/customer';
 import { useGetOrders } from '@/hooks/order';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -32,6 +33,14 @@ const CustomerDetailPage = () => {
   const customerId = params?.id as string;
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    firstName: '',
+    lastName: '',
+    phone: '',
+    whatsappNumber: ''
+  });
+  const [isPhoneValid, setIsPhoneValid] = useState(false);
   
   const { customer, isLoading: customerLoading, error: customerError } = useGetCustomerById(customerId);
   const { transactions, summary, isLoading: transactionsLoading, error: transactionsError } = useGetCustomerTransactions(customerId);
@@ -115,6 +124,49 @@ const CustomerDetailPage = () => {
   const handleDeletionSuccess = () => {
     message.success('Customer deleted successfully');
     window.location.href = '/dashboard/customer-management';
+  };
+
+  const handleEditClick = () => {
+    if (customer) {
+      setEditForm({
+        firstName: customer.firstName || '',
+        lastName: customer.lastName || '',
+        phone: customer.phone || '',
+        whatsappNumber: customer.whatsappNumber || ''
+      });
+      setIsPhoneValid(true); // Assume current phone is valid
+      setIsEditModalOpen(true);
+    }
+  };
+
+  const handleEditSubmit = async () => {
+    if (!isPhoneValid) {
+      message.error('Please enter a valid phone number');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/customers/${customerId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(editForm),
+      });
+
+      if (response.ok) {
+        message.success('Customer updated successfully');
+        setIsEditModalOpen(false);
+        // Refresh the page to get updated data
+        window.location.reload();
+      } else {
+        const error = await response.json();
+        message.error(error.message || 'Failed to update customer');
+      }
+    } catch (error) {
+      console.error('Update error:', error);
+      message.error('Failed to update customer');
+    }
   };
 
   if (customerLoading) {
@@ -241,6 +293,14 @@ const CustomerDetailPage = () => {
           </div>
           
           <div className="flex items-center space-x-3">
+            <Button 
+              type="default"
+              icon={<UserOutlined />}
+              onClick={handleEditClick}
+              className="border-blue-300 hover:border-blue-400"
+            >
+              Edit Customer
+            </Button>
             <Popconfirm
               title="Delete Customer"
               description="Are you sure you want to delete this customer? This action cannot be undone."
@@ -899,6 +959,58 @@ const CustomerDetailPage = () => {
         customerId={customerId}
         customerName={`${customer.firstName} ${customer.lastName}`}
       />
+
+      {/* Edit Customer Modal */}
+      <Modal
+        title="Edit Customer"
+        open={isEditModalOpen}
+        onCancel={() => setIsEditModalOpen(false)}
+        onOk={handleEditSubmit}
+        okText="Update Customer"
+        cancelText="Cancel"
+        okButtonProps={{ disabled: !isPhoneValid }}
+        width={600}
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">First Name *</label>
+            <Input
+              value={editForm.firstName}
+              onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value })}
+              placeholder="Enter first name"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium mb-2">Last Name *</label>
+            <Input
+              value={editForm.lastName}
+              onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })}
+              placeholder="Enter last name"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium mb-2">Phone Number *</label>
+            <PhoneInput
+              value={editForm.phone}
+              onChange={(value) => setEditForm({ ...editForm, phone: value })}
+              onValidationChange={setIsPhoneValid}
+              excludeUserId={customerId}
+              placeholder="Enter phone number"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium mb-2">WhatsApp Number</label>
+            <Input
+              value={editForm.whatsappNumber}
+              onChange={(e) => setEditForm({ ...editForm, whatsappNumber: e.target.value })}
+              placeholder="Enter WhatsApp number (optional)"
+            />
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

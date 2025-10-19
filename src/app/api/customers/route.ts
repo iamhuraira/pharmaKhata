@@ -5,6 +5,7 @@ import { Role } from '@/lib/models/roles';
 import { UserStatus } from '@/lib/constants/enums';
 import { LedgerTransaction } from '@/lib/models/ledger';
 import { updateCustomerBalance } from '@/lib/utils/customerBalance';
+import { validateCustomerPhone } from '@/lib/utils/phoneValidation';
 // import bcrypt from 'bcrypt'; // Not used in this file
 
 export async function POST(request: NextRequest) {
@@ -37,12 +38,12 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Check if customer already exists
-    const existingCustomer = await User.findOne({ phone });
-    if (existingCustomer) {
+    // Validate phone number format and uniqueness for customers
+    const phoneValidation = await validateCustomerPhone(phone);
+    if (!phoneValidation.isValid) {
       return NextResponse.json({
         success: false,
-        message: 'Customer with this phone number already exists'
+        message: phoneValidation.message || 'Invalid phone number'
       }, { status: 400 });
     }
 

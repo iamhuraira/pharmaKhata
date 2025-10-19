@@ -5,6 +5,7 @@ import { Role } from '@/lib/models/roles';
 import { UserStatus } from '@/lib/constants/enums';
 import { validateCustomerDeletion, getCustomerDeletionDetails } from '@/lib/utils/customerDeletionValidation';
 import { handleCustomerTransactions, getAvailableTransactionStrategies, getArchiveCustomers } from '@/lib/utils/customerTransactionHandling';
+import { validateCustomerPhone } from '@/lib/utils/phoneValidation';
 
 export async function GET(
   _request: NextRequest,
@@ -129,6 +130,23 @@ export async function PUT(
       phone,
       whatsappNumber
     } = body;
+
+    // Validate required fields
+    if (!firstName || !lastName || !phone) {
+      return NextResponse.json({
+        success: false,
+        message: 'First name, last name, and phone are required'
+      }, { status: 400 });
+    }
+
+    // Validate phone number format and uniqueness for customers
+    const phoneValidation = await validateCustomerPhone(phone, customerId);
+    if (!phoneValidation.isValid) {
+      return NextResponse.json({
+        success: false,
+        message: phoneValidation.message || 'Invalid phone number'
+      }, { status: 400 });
+    }
 
     // Validate customer exists
     const customerRole = await Role.findOne({ name: 'customer' });
