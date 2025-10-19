@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Modal, Button, Alert, List, Statistic, Row, Col, Spin, Typography, Divider } from 'antd';
-import { ExclamationCircleOutlined, WarningOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { Modal, Button, Alert, List, Statistic, Row, Col, Spin, Typography, Divider, Radio, Select, Space } from 'antd';
+import { ExclamationCircleOutlined, WarningOutlined, InfoCircleOutlined, DatabaseOutlined } from '@ant-design/icons';
 import { useValidateCustomerDeletion, useDeleteCustomer } from '@/hooks/customer';
 
 const { Title, Text } = Typography;
@@ -24,9 +24,11 @@ export default function CustomerDeletionModal({
 }: CustomerDeletionModalProps) {
   const [validationData, setValidationData] = useState<any>(null);
   const [isValidating, setIsValidating] = useState(false);
+  const [selectedStrategy, setSelectedStrategy] = useState<string>('soft_delete');
+  const [selectedArchiveCustomer, setSelectedArchiveCustomer] = useState<string>('');
   
   const { validateCustomerDeletion } = useValidateCustomerDeletion();
-  const { deleteCustomer, isLoading: isDeleting } = useDeleteCustomer();
+  const { isLoading: isDeleting } = useDeleteCustomer();
 
   useEffect(() => {
     if (visible && customerId) {
@@ -48,7 +50,27 @@ export default function CustomerDeletionModal({
 
   const handleDelete = async (forceDelete = false) => {
     try {
-      await deleteCustomer({ customerId, forceDelete });
+      const url = new URL(`/api/customers/${customerId}`, window.location.origin);
+      if (forceDelete) {
+        url.searchParams.set('force', 'true');
+      }
+      url.searchParams.set('strategy', selectedStrategy);
+      if (selectedStrategy === 'archive' && selectedArchiveCustomer) {
+        url.searchParams.set('archiveCustomerId', selectedArchiveCustomer);
+      }
+
+      const response = await fetch(url.toString(), {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to delete customer');
+      }
+
+      const result = await response.json();
+      console.log('Deletion result:', result);
+      
       onSuccess();
       onClose();
     } catch (error) {
@@ -203,6 +225,65 @@ export default function CustomerDeletionModal({
 
             <Divider />
 
+            {/* Transaction Handling Strategy */}
+            {validationData?.transactionStrategies && (
+              <div className="mt-4">
+                <Title level={5}>
+                  <DatabaseOutlined className="mr-2" />
+                  Transaction Handling Strategy
+                </Title>
+                <Radio.Group 
+                  value={selectedStrategy} 
+                  onChange={(e) => setSelectedStrategy(e.target.value)}
+                  className="w-full"
+                >
+                  <Space direction="vertical" className="w-full">
+                    {validationData.transactionStrategies.map((strategy: any) => (
+                      <Radio key={strategy.id} value={strategy.id} className="w-full">
+                        <div className="ml-2">
+                          <div className="flex items-center gap-2">
+                            <Text strong>{strategy.name}</Text>
+                            {strategy.recommended && (
+                              <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">
+                                Recommended
+                              </span>
+                            )}
+                          </div>
+                          <Text type="secondary" className="block text-sm">
+                            {strategy.description}
+                          </Text>
+                          {strategy.warning && (
+                            <Text type="danger" className="block text-sm">
+                              ⚠️ {strategy.warning}
+                            </Text>
+                          )}
+                        </div>
+                      </Radio>
+                    ))}
+                  </Space>
+                </Radio.Group>
+
+                {/* Archive Customer Selection */}
+                {selectedStrategy === 'archive' && validationData.archiveCustomers && (
+                  <div className="mt-4">
+                    <Text strong>Select Customer to Archive Data To:</Text>
+                    <Select
+                      className="w-full mt-2"
+                      placeholder="Select a customer to transfer data to"
+                      value={selectedArchiveCustomer}
+                      onChange={setSelectedArchiveCustomer}
+                      options={validationData.archiveCustomers.map((customer: any) => ({
+                        value: customer.id,
+                        label: `${customer.name} (${customer.phone})`
+                      }))}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            <Divider />
+
             {/* Action Buttons */}
             <div className="flex justify-end gap-2">
               <Button onClick={handleClose}>
@@ -214,6 +295,7 @@ export default function CustomerDeletionModal({
                   danger 
                   onClick={() => handleDelete(false)}
                   loading={isDeleting}
+                  disabled={selectedStrategy === 'archive' && !selectedArchiveCustomer}
                 >
                   Delete Customer
                 </Button>
@@ -223,6 +305,7 @@ export default function CustomerDeletionModal({
                   danger 
                   onClick={() => handleDelete(true)}
                   loading={isDeleting}
+                  disabled={selectedStrategy === 'archive' && !selectedArchiveCustomer}
                 >
                   Force Delete
                 </Button>

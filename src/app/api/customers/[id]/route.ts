@@ -4,6 +4,7 @@ import { User } from '@/lib/models/user';
 import { Role } from '@/lib/models/roles';
 import { UserStatus } from '@/lib/constants/enums';
 import { validateCustomerDeletion, getCustomerDeletionDetails } from '@/lib/utils/customerDeletionValidation';
+import { handleCustomerTransactions, getAvailableTransactionStrategies, getArchiveCustomers } from '@/lib/utils/customerTransactionHandling';
 
 export async function GET(
   _request: NextRequest,
@@ -209,6 +210,8 @@ export async function DELETE(
     const { searchParams } = new URL(request.url);
     const forceDelete = searchParams.get('force') === 'true';
     const validateOnly = searchParams.get('validate') === 'true';
+    const transactionStrategy = searchParams.get('strategy') as 'preserve' | 'soft_delete' | 'hard_delete' | 'archive' || 'soft_delete';
+    const archiveCustomerId = searchParams.get('archiveCustomerId');
 
     // Validate customer exists
     const customerRole = await Role.findOne({ name: 'customer' });
@@ -237,11 +240,16 @@ export async function DELETE(
     // If validate-only request, return validation results
     if (validateOnly) {
       const details = await getCustomerDeletionDetails(customerId);
+      const strategies = await getAvailableTransactionStrategies(customerId);
+      const archiveCustomers = await getArchiveCustomers(customerId);
+      
       return NextResponse.json({
         success: true,
         data: {
           validation,
-          details
+          details,
+          transactionStrategies: strategies,
+          archiveCustomers
         }
       });
     }
@@ -263,7 +271,24 @@ export async function DELETE(
       console.warn(`⚠️ Force deleting customer ${customerId} despite validation warnings:`, validation.reasons);
     }
 
-    // Soft delete by updating status to inactive
+    // Handle transactions based on selected strategy
+    const transactionOptions = {
+      strategy: transactionStrategy,
+      updateReferences: true,
+      archiveToCustomer: archiveCustomerId || undefined
+    };
+
+    const transactionResult = await handleCustomerTransactions(customerId, transactionOptions);
+    
+    if (!transactionResult.success) {
+      return NextResponse.json({
+        success: false,
+        message: 'Failed to handle customer transactions',
+        data: { transactionResult }
+      }, { status: 500 });
+    }
+
+    // Soft delete customer by updating status to inactive
     const updatedCustomer = await User.findByIdAndUpdate(
       customerId,
       {
@@ -274,7 +299,7 @@ export async function DELETE(
       { new: true }
     ).select('-password');
 
-    console.log(`🔍 Customer ${customerId} deactivated successfully`);
+    console.log(`🔍 Customer ${customerId} deactivated successfully with ${transactionStrategy} strategy`);
 
     return NextResponse.json({
       success: true,
@@ -289,6 +314,7 @@ export async function DELETE(
           status: updatedCustomer!.status,
           deletedAt: updatedCustomer!.deletedAt
         },
+        transactionHandling: transactionResult,
         validation: forceDelete ? validation : undefined
       }
     });
