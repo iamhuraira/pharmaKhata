@@ -126,7 +126,7 @@ export async function GET(request: NextRequest) {
     
     const [products, total] = await Promise.all([
       (Product as any).find(filter)
-        .populate('categoryId', 'name')
+        .populate('categoryId', 'name urduName description')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
@@ -147,7 +147,9 @@ export async function GET(request: NextRequest) {
       quantity: product.quantity,
       categoryId: {
         _id: product.categoryId?._id,
-        name: product.categoryId?.name || 'Uncategorized'
+        name: product.categoryId?.name || 'Uncategorized',
+        urduName: product.categoryId?.urduName || '',
+        description: product.categoryId?.description || ''
       },
       size: product.size,
       packType: product.packType,

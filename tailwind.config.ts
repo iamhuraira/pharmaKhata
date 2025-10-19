@@ -18,26 +18,27 @@ const config: Config = {
           "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
       },
       colors: {
-        primary: "#4CAF50",
-        primaryDark: "#449e48",
-        primaryDarker: "#3d8c40",
-        secondary: "#81C784",
-        primaryLighter: '#DBEFDC',
-        success: "#00d37f",
-        warning: "#fbb324",
-        schedule: "#28A745",
-        dark: "#252525",
-        light: "#606060",
-        subtle: "#9e9e9e",
-        subtleBg: "#ecf1f4",
-        lightBg: "#fafcfe",
-        danger: "#F32013",
-        primaryLight: "#6E51D929",
+        // Pharma Khata Landing Page Color Scheme
+        primary: "#00d37f", // Vibrant green for primary actions
+        primaryDark: "#00b86a", // Darker green for hover states
+        primaryDarker: "#009d5a", // Even darker for active states
+        secondary: "#81C784", // Light green for secondary elements
+        primaryLighter: '#e8f8f0', // Very light green for backgrounds
+        success: "#00d37f", // Same as primary for consistency
+        warning: "#fbb324", // Keep existing warning color
+        schedule: "#28A745", // Keep existing schedule color
+        dark: "#1a1a1a", // Deep almost black for headlines
+        light: "#6b7280", // Softer gray for body text
+        subtle: "#9ca3af", // Light gray for subtle text
+        subtleBg: "#f8fafc", // Very light off-white/gray background
+        lightBg: "#fafcfe", // Pure light background
+        danger: "#F32013", // Keep existing danger color
+        primaryLight: "#e8f8f0", // Light primary background
         "background-gradient":
-          "linear-gradient(0deg, rgba(110, 81, 217, 0.08) 0%, rgba(110, 81, 217, 0.08) 100%), #FAFCFE",
+          "linear-gradient(0deg, rgba(0, 211, 127, 0.08) 0%, rgba(0, 211, 127, 0.08) 100%), #FAFCFE",
         card: {
-          DEFAULT: "#ffffff",
-          foreground: "#1a1a1a",
+          DEFAULT: "#ffffff", // Pure white for cards
+          foreground: "#1a1a1a", // Dark text on white
         },
         popover: {
           DEFAULT: "#f8f9fa",
@@ -48,22 +49,22 @@ const config: Config = {
           foreground: "#6c757d",
         },
         accent: {
-          DEFAULT: "#007bff",
+          DEFAULT: "#00d37f", // Use primary green for accent
           foreground: "#ffffff",
         },
         destructive: {
           DEFAULT: "#dc3545",
           foreground: "#ffffff",
         },
-        border: "#dee2e6",
+        border: "#e5e7eb", // Very light gray for borders
         input: "#ffffff",
-        ring: "#80bdff",
+        ring: "#00d37f", // Primary green for focus rings
         chart: {
-          "1": "#007bff",
-          "2": "#28a745",
-          "3": "#ffc107",
-          "4": "#17a2b8",
-          "5": "#6f42c1",
+          "1": "#00d37f", // Primary green
+          "2": "#28a745", // Success green
+          "3": "#ffc107", // Warning yellow
+          "4": "#17a2b8", // Info blue
+          "5": "#6f42c1", // Purple
         },
       },
       fontFamily: {
