@@ -22,8 +22,7 @@ export default function middleware(request: NextRequest) {
   }
   
   if (
-    (request.nextUrl.pathname === '/sign-in' ||
-      request.nextUrl.pathname === '/') &&
+    request.nextUrl.pathname === '/sign-in' &&
     token &&
     emailVerified === 'true'
   ) {
