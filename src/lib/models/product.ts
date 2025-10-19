@@ -14,6 +14,7 @@ export interface IProduct extends Document {
   size?: number; // Now at root level (e.g., 120, 240)
   packType: string; // Now at root level (e.g., "ml", "Tabs")
   price: number; // Now at root level
+  purchasePrice?: number;
 }
 
 const productSchema = new Schema<IProduct>(
@@ -54,6 +55,11 @@ const productSchema = new Schema<IProduct>(
     price: {
       type: Number,
       required: true,
+    },
+    purchasePrice: {
+      type: Number,
+      required: false,
+      default: 0,
     },
   },
   {

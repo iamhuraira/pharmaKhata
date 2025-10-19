@@ -20,6 +20,7 @@ export async function POST(request: NextRequest) {
       firstName,
       lastName,
       phone,
+      whatsappNumber,
       email,
       address,
       creditLimit,
@@ -95,6 +96,7 @@ export async function POST(request: NextRequest) {
       firstName,
       lastName,
       phone,
+      whatsappNumber: whatsappNumber || undefined, // Add WhatsApp number field
       email: email || undefined, // Add email field
       password: 'defaultPassword123', // Set a default password
       role: customerRole._id,
@@ -189,6 +191,7 @@ export async function POST(request: NextRequest) {
           firstName: customer.firstName,
           lastName: customer.lastName,
           phone: customer.phone,
+          whatsappNumber: customer.whatsappNumber || '',
           email: email || '',
           address: currentAddress ? `${currentAddress.street}, ${currentAddress.city}, ${currentAddress.state}, ${currentAddress.country}` : '',
           currentAddress: currentAddress, // Return the structured address
@@ -258,7 +261,7 @@ export async function GET(request: NextRequest) {
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
-        .select('firstName lastName phone email status role balance createdAt currentAddress')
+        .select('firstName lastName phone whatsappNumber email status role balance createdAt currentAddress')
         .lean(),
       (User as any).countDocuments(filter)
     ]);
@@ -289,6 +292,7 @@ export async function GET(request: NextRequest) {
         firstName: customer.firstName,
         lastName: customer.lastName,
         phone: customer.phone,
+        whatsappNumber: customer.whatsappNumber || '',
         email: customer.email || '',
         status: customer.status,
         role: customer.role?.name || 'customer',

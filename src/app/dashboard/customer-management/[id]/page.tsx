@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { Card, Typography, Button, Avatar, Tag, Tabs, List, Statistic, Row, Col, Empty, Spin, Popconfirm, message } from 'antd';
   import { UserOutlined, PhoneOutlined, EnvironmentOutlined, CalendarOutlined, DollarOutlined, PlusOutlined, MailOutlined, CreditCardOutlined, DeleteOutlined } from '@ant-design/icons';
 import CustomerPaymentModal from '@/components/customer-management/CustomerPaymentModal';
-import { useDeleteCustomer, useGetCustomerById, useGetCustomerTransactions, useRecordPayment } from '@/hooks/customer';
+import CustomerDeletionModal from '@/components/customer-management/CustomerDeletionModal';
+import { useGetCustomerById, useGetCustomerTransactions, useRecordPayment } from '@/hooks/customer';
 import { useGetOrders } from '@/hooks/order';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
@@ -30,12 +31,12 @@ const CustomerDetailPage = () => {
   const params = useParams();
   const customerId = params?.id as string;
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false);
   
   const { customer, isLoading: customerLoading, error: customerError } = useGetCustomerById(customerId);
   const { transactions, summary, isLoading: transactionsLoading, error: transactionsError } = useGetCustomerTransactions(customerId);
   const { orders: allOrders } = useGetOrders();
   const { recordPayment, isLoading: isRecordingPayment } = useRecordPayment();
-  const { deleteCustomer } = useDeleteCustomer();
 
   const getTransactionIcon = (type: string) => {
     switch (type) {
@@ -107,15 +108,13 @@ const CustomerDetailPage = () => {
     }
   };
 
-  const handleDelete = async () => {
-    try {
-      await deleteCustomer(customerId);
-      message.success('Customer deleted successfully');
-      // Redirect back to customers list
-      window.location.href = '/dashboard/customer-management';
-    } catch (error) {
-      message.error('Failed to delete customer');
-    }
+  const handleDelete = () => {
+    setIsDeletionModalOpen(true);
+  };
+
+  const handleDeletionSuccess = () => {
+    message.success('Customer deleted successfully');
+    window.location.href = '/dashboard/customer-management';
   };
 
   if (customerLoading) {
@@ -891,6 +890,14 @@ const CustomerDetailPage = () => {
         customerName={`${customer.firstName} ${customer.lastName}`}
         dueAmount={totalOutstandingAmount}
         loading={isRecordingPayment}
+      />
+
+      <CustomerDeletionModal
+        visible={isDeletionModalOpen}
+        onClose={() => setIsDeletionModalOpen(false)}
+        onSuccess={handleDeletionSuccess}
+        customerId={customerId}
+        customerName={`${customer.firstName} ${customer.lastName}`}
       />
     </div>
   );
