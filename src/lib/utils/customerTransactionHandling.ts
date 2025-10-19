@@ -20,6 +20,8 @@ export interface CustomerDeletionResult {
     transactionsDeleted?: number;
     transactionsArchived?: number;
     transactionsUpdated?: number;
+    ordersDeleted?: number;
+    ordersArchived?: number;
     ordersUpdated?: number;
   };
 }

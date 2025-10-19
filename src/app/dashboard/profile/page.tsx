@@ -6,7 +6,6 @@ import { UserOutlined, PhoneOutlined, MailOutlined, LockOutlined, EnvironmentOut
 import { useGetProfile, useUpdateProfile } from '@/hooks/profile';
 import PhoneInput from '@/components/customer-management/PhoneInput';
 import LoadingSpinner from '@/components/LoadingSpinner';
-import DebugAuth from '@/components/DebugAuth';
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
@@ -20,14 +19,6 @@ export default function ProfilePage() {
   const { profile, isLoading: profileLoading, isError: profileError } = useGetProfile();
   const { updateProfile, isLoading: isUpdating } = useUpdateProfile();
 
-  // Debug logging
-  console.log('🔍 ProfilePage Debug:', { 
-    profile, 
-    profileLoading, 
-    profileError,
-    hasProfile: !!profile,
-    cookies: typeof document !== 'undefined' ? document.cookie : 'SSR'
-  });
 
   const handleSubmit = async (values: any) => {
     if (!isPhoneValid) {

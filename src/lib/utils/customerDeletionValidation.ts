@@ -65,7 +65,7 @@ export async function validateCustomerDeletion(customerId: string): Promise<Cust
     }
 
     // Check if customer is already deleted/inactive
-    if (customer.status === 'inactive' || customer.status === 'deleted') {
+    if (String(customer.status) === 'inactive' || String(customer.status) === 'deleted') {
       return {
         canDelete: false,
         reasons: ['Customer is already deactivated'],

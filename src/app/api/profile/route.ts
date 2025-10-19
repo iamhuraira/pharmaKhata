@@ -11,14 +11,8 @@ export async function GET(request: NextRequest) {
     
     // Get token from headers
     const authHeader = request.headers.get('authorization');
-    console.log('🔍 Profile API Debug:', { 
-      authHeader: authHeader ? authHeader.substring(0, 20) + '...' : null,
-      hasAuthHeader: !!authHeader,
-      startsWithBearer: authHeader?.startsWith('Bearer ')
-    });
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        console.log('❌ Profile API: No valid authorization header');
       return NextResponse.json({
         success: false,
         message: 'No token provided'
@@ -40,17 +34,9 @@ export async function GET(request: NextRequest) {
 
       // Verify JWT token
       const decoded = jwt.verify(token, jwtSecret) as any;
-      console.log('🔍 Profile API: JWT decoded:', { 
-        id: decoded.id, 
-        role: decoded.role 
-      });
       
       // Get user profile
       const user = await User.findById(decoded.id).select('-password');
-      console.log('🔍 Profile API: User found:', { 
-        userExists: !!user, 
-        userId: user?._id 
-      });
       
       if (!user) {
         return NextResponse.json({
