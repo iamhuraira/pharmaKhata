@@ -71,14 +71,35 @@ const updateCustomer = async ({ id, ...data }: any) => {
   return response.json();
 };
 
-const deleteCustomer = async (customerId: string) => {
-  const response = await fetch(`/api/customers/${customerId}`, {
+const deleteCustomer = async (customerId: string, forceDelete = false) => {
+  const url = new URL(`/api/customers/${customerId}`, window.location.origin);
+  if (forceDelete) {
+    url.searchParams.set('force', 'true');
+  }
+  
+  const response = await fetch(url.toString(), {
     method: 'DELETE',
   });
   
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.message || 'Failed to delete customer');
+  }
+  
+  return response.json();
+};
+
+const validateCustomerDeletion = async (customerId: string) => {
+  const url = new URL(`/api/customers/${customerId}`, window.location.origin);
+  url.searchParams.set('validate', 'true');
+  
+  const response = await fetch(url.toString(), {
+    method: 'DELETE',
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to validate customer deletion');
   }
   
   return response.json();
@@ -269,13 +290,41 @@ export const useDeleteCustomer = () => {
 
   const { mutateAsync, error, isError, isPending, isSuccess } = useMutation({
     mutationKey: ['deleteCustomer'],
-    mutationFn: deleteCustomer,
+    mutationFn: ({ customerId, forceDelete = false }: { customerId: string; forceDelete?: boolean }) => 
+      deleteCustomer(customerId, forceDelete),
     onSuccess,
     onError,
   });
 
   return {
     deleteCustomer: mutateAsync,
+    error,
+    isError,
+    isLoading: isPending,
+    isSuccess,
+  };
+};
+
+// Validate customer deletion
+export const useValidateCustomerDeletion = () => {
+  const onError = (error: IAPIError) => {
+    openToast(
+      'error',
+      error?.response?.data?.message ||
+        error?.response?.message ||
+        error?.message ||
+        'Failed to validate customer deletion',
+    );
+  };
+
+  const { mutateAsync, error, isError, isPending, isSuccess } = useMutation({
+    mutationKey: ['validateCustomerDeletion'],
+    mutationFn: validateCustomerDeletion,
+    onError,
+  });
+
+  return {
+    validateCustomerDeletion: mutateAsync,
     error,
     isError,
     isLoading: isPending,

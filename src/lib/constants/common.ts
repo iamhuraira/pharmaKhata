@@ -12,6 +12,7 @@ export const apiRoutes = {
   orders: '/orders',
   expenses: '/expenses',
   reports: '/reports',
+  documents: '/documents',
 };
 
 export const MODELS = {

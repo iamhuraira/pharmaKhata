@@ -74,6 +74,11 @@ const userSchema = new Schema(
       type: String,
     },
 
+    whatsappNumber: {
+      type: String,
+      required: false,
+    },
+
     email: {
       type: String,
       required: false,

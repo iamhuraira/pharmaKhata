@@ -14,6 +14,7 @@ import CustomerQuickView from './CustomerQuickView';
 import CustomerPaymentModal from './CustomerPaymentModal';
 import { useCreateCustomer, useGetAllCustomers, useRecordPayment } from '@/hooks/customer';
 import { useGetOrders } from '@/hooks/order';
+import PhoneInput from './PhoneInput';
 
 const { Title, Text } = Typography;
 
@@ -22,7 +23,29 @@ const customerSchema = Yup.object().shape({
   lastName: Yup.string().required('Last name is required'),
   phone: Yup.string()
     .required('Phone number is required')
-    .matches(/^[0-9]{11}$/, 'Invalid phone number (11 digits required)'),
+    .matches(/^03\d{9}$/, 'Invalid phone number format. Must be 11 digits starting with 03')
+    .test('phone-unique', 'Phone number already exists for another customer', async function(value) {
+      if (!value) return true; // Let required validation handle empty values
+      
+      try {
+        const response = await fetch('/api/customers/validate-phone', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            phone: value,
+            excludeUserId: this.parent?.id // Exclude current customer if updating
+          }),
+        });
+        
+        const result = await response.json();
+        return result.success;
+      } catch (error) {
+        console.error('Phone validation error:', error);
+        return false;
+      }
+    }),
   email: Yup.string().email('Invalid email format').optional(),
   address: Yup.object().shape({
     street: Yup.string().required('Street is required'),
@@ -511,14 +534,27 @@ const CustomerManagement = () => {
                     <div className='grid grid-cols-2 gap-4'>
                       <div>
                         <label className='block text-sm font-medium mb-2 text-gray-700'>Phone Number *</label>
-                        <Field 
-                          name='phone' 
-                          as={Input} 
-                          placeholder='03086173320' 
-                          size='large'
-                          className='h-11 text-base rounded-lg border-gray-200 focus:border-green-500 focus:ring-green-500'
-                          prefix={<PhoneOutlined className='text-gray-400' />}
-                        />
+                        <Field name='phone'>
+                          {({ field, form }: any) => (
+                            <PhoneInput
+                              value={field.value}
+                              onChange={(value) => {
+                                form.setFieldValue('phone', value);
+                                form.setFieldTouched('phone', true);
+                              }}
+                              onValidationChange={(isValid, message) => {
+                                // Update form validation state
+                                if (isValid) {
+                                  form.setFieldError('phone', undefined);
+                                } else {
+                                  form.setFieldError('phone', message);
+                                }
+                              }}
+                              placeholder='03086173320'
+                              className='h-11'
+                            />
+                          )}
+                        </Field>
                         <ErrorMessage
                           name='phone'
                           component='div'

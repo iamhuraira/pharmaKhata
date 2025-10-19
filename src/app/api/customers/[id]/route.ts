@@ -3,6 +3,9 @@ import { connectDB } from '@/lib/db';
 import { User } from '@/lib/models/user';
 import { Role } from '@/lib/models/roles';
 import { UserStatus } from '@/lib/constants/enums';
+import { validateCustomerDeletion, getCustomerDeletionDetails } from '@/lib/utils/customerDeletionValidation';
+import { handleCustomerTransactions, getAvailableTransactionStrategies, getArchiveCustomers } from '@/lib/utils/customerTransactionHandling';
+import { validateCustomerPhone } from '@/lib/utils/phoneValidation';
 
 export async function GET(
   _request: NextRequest,
@@ -29,7 +32,7 @@ export async function GET(
     const customer = await User.findOne({ 
       _id: id, 
       role: customerRole._id 
-    }).select('firstName lastName phone email status role balance createdAt updatedAt currentAddress deletedAt deletedBy');
+    }).select('firstName lastName phone whatsappNumber email status role balance createdAt updatedAt currentAddress deletedAt deletedBy');
 
     if (!customer) {
       return NextResponse.json({
@@ -86,6 +89,7 @@ export async function GET(
           firstName: customer.firstName,
           lastName: customer.lastName,
           phone: customer.phone,
+          whatsappNumber: customer.whatsappNumber || '',
           email: customer.email || '',
           status: customer.status,
           role: customer.role,
@@ -123,8 +127,26 @@ export async function PUT(
     const {
       firstName,
       lastName,
-      phone
+      phone,
+      whatsappNumber
     } = body;
+
+    // Validate required fields
+    if (!firstName || !lastName || !phone) {
+      return NextResponse.json({
+        success: false,
+        message: 'First name, last name, and phone are required'
+      }, { status: 400 });
+    }
+
+    // Validate phone number format and uniqueness for customers
+    const phoneValidation = await validateCustomerPhone(phone, customerId);
+    if (!phoneValidation.isValid) {
+      return NextResponse.json({
+        success: false,
+        message: phoneValidation.message || 'Invalid phone number'
+      }, { status: 400 });
+    }
 
     // Validate customer exists
     const customerRole = await Role.findOne({ name: 'customer' });
@@ -153,7 +175,8 @@ export async function PUT(
       {
         firstName,
         lastName,
-        phone
+        phone,
+        whatsappNumber
       },
       { new: true }
     ).select('-password');
@@ -164,6 +187,7 @@ export async function PUT(
       firstName: updatedCustomer!.firstName,
       lastName: updatedCustomer!.lastName,
       phone: updatedCustomer!.phone,
+          whatsappNumber: updatedCustomer!.whatsappNumber || '',
       email: '', // Default value since it's not in User model
       address: {}, // Default empty address
       balance: 0, // Will be calculated from transactions
@@ -191,7 +215,7 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -201,6 +225,11 @@ export async function DELETE(
     User && Role;
     
     const { id: customerId } = await params;
+    const { searchParams } = new URL(request.url);
+    const forceDelete = searchParams.get('force') === 'true';
+    const validateOnly = searchParams.get('validate') === 'true';
+    const transactionStrategy = searchParams.get('strategy') as 'preserve' | 'soft_delete' | 'hard_delete' | 'archive' || 'soft_delete';
+    const archiveCustomerId = searchParams.get('archiveCustomerId');
 
     // Validate customer exists
     const customerRole = await Role.findOne({ name: 'customer' });
@@ -223,7 +252,61 @@ export async function DELETE(
       }, { status: 404 });
     }
 
-    // Soft delete by updating status to inactive
+    // Perform validation checks
+    const validation = await validateCustomerDeletion(customerId);
+    
+    // If validate-only request, return validation results
+    if (validateOnly) {
+      const details = await getCustomerDeletionDetails(customerId);
+      const strategies = await getAvailableTransactionStrategies(customerId);
+      const archiveCustomers = await getArchiveCustomers(customerId);
+      
+      return NextResponse.json({
+        success: true,
+        data: {
+          validation,
+          details,
+          transactionStrategies: strategies,
+          archiveCustomers
+        }
+      });
+    }
+
+    // If validation fails and not force delete, return error
+    if (!validation.canDelete && !forceDelete) {
+      return NextResponse.json({
+        success: false,
+        message: 'Cannot delete customer due to existing relationships',
+        data: {
+          validation,
+          details: await getCustomerDeletionDetails(customerId)
+        }
+      }, { status: 400 });
+    }
+
+    // If force delete, log the action
+    if (forceDelete && !validation.canDelete) {
+      console.warn(`⚠️ Force deleting customer ${customerId} despite validation warnings:`, validation.reasons);
+    }
+
+    // Handle transactions based on selected strategy
+    const transactionOptions = {
+      strategy: transactionStrategy,
+      updateReferences: true,
+      archiveToCustomer: archiveCustomerId || undefined
+    };
+
+    const transactionResult = await handleCustomerTransactions(customerId, transactionOptions);
+    
+    if (!transactionResult.success) {
+      return NextResponse.json({
+        success: false,
+        message: 'Failed to handle customer transactions',
+        data: { transactionResult }
+      }, { status: 500 });
+    }
+
+    // Soft delete customer by updating status to inactive
     const updatedCustomer = await User.findByIdAndUpdate(
       customerId,
       {
@@ -234,20 +317,23 @@ export async function DELETE(
       { new: true }
     ).select('-password');
 
-    console.log(`🔍 Customer ${customerId} deactivated successfully`);
+    console.log(`🔍 Customer ${customerId} deactivated successfully with ${transactionStrategy} strategy`);
 
     return NextResponse.json({
       success: true,
-      message: 'Customer deactivated successfully',
+      message: forceDelete ? 'Customer force deactivated successfully' : 'Customer deactivated successfully',
       data: {
         customer: {
           id: updatedCustomer!._id,
           firstName: updatedCustomer!.firstName,
           lastName: updatedCustomer!.lastName,
           phone: updatedCustomer!.phone,
+          whatsappNumber: updatedCustomer!.whatsappNumber || '',
           status: updatedCustomer!.status,
           deletedAt: updatedCustomer!.deletedAt
-        }
+        },
+        transactionHandling: transactionResult,
+        validation: forceDelete ? validation : undefined
       }
     });
 

@@ -5,6 +5,7 @@ import { Role } from '@/lib/models/roles';
 import { UserStatus } from '@/lib/constants/enums';
 import { LedgerTransaction } from '@/lib/models/ledger';
 import { updateCustomerBalance } from '@/lib/utils/customerBalance';
+import { validateCustomerPhone } from '@/lib/utils/phoneValidation';
 // import bcrypt from 'bcrypt'; // Not used in this file
 
 export async function POST(request: NextRequest) {
@@ -20,6 +21,7 @@ export async function POST(request: NextRequest) {
       firstName,
       lastName,
       phone,
+      whatsappNumber,
       email,
       address,
       creditLimit,
@@ -36,12 +38,12 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Check if customer already exists
-    const existingCustomer = await User.findOne({ phone });
-    if (existingCustomer) {
+    // Validate phone number format and uniqueness for customers
+    const phoneValidation = await validateCustomerPhone(phone);
+    if (!phoneValidation.isValid) {
       return NextResponse.json({
         success: false,
-        message: 'Customer with this phone number already exists'
+        message: phoneValidation.message || 'Invalid phone number'
       }, { status: 400 });
     }
 
@@ -95,6 +97,7 @@ export async function POST(request: NextRequest) {
       firstName,
       lastName,
       phone,
+      whatsappNumber: whatsappNumber || undefined, // Add WhatsApp number field
       email: email || undefined, // Add email field
       password: 'defaultPassword123', // Set a default password
       role: customerRole._id,
@@ -189,6 +192,7 @@ export async function POST(request: NextRequest) {
           firstName: customer.firstName,
           lastName: customer.lastName,
           phone: customer.phone,
+          whatsappNumber: customer.whatsappNumber || '',
           email: email || '',
           address: currentAddress ? `${currentAddress.street}, ${currentAddress.city}, ${currentAddress.state}, ${currentAddress.country}` : '',
           currentAddress: currentAddress, // Return the structured address
@@ -258,7 +262,7 @@ export async function GET(request: NextRequest) {
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
-        .select('firstName lastName phone email status role balance createdAt currentAddress')
+        .select('firstName lastName phone whatsappNumber email status role balance createdAt currentAddress')
         .lean(),
       (User as any).countDocuments(filter)
     ]);
@@ -289,6 +293,7 @@ export async function GET(request: NextRequest) {
         firstName: customer.firstName,
         lastName: customer.lastName,
         phone: customer.phone,
+        whatsappNumber: customer.whatsappNumber || '',
         email: customer.email || '',
         status: customer.status,
         role: customer.role?.name || 'customer',

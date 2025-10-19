@@ -30,6 +30,7 @@ export interface IUser {
   role: IRoles | Types.ObjectId;
   status: UserStatus;
   phone: string;
+  whatsappNumber?: string;
   address?: IAddress;
   emailVerified: boolean;
   phoneVerified: boolean;
